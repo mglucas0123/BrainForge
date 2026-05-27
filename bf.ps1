@@ -89,6 +89,17 @@ function Test-KitLayout {
     Test-Path (Join-Path $KitRoot "core\BRAINFORGE.md")
 }
 
+function Get-HostKitPath {
+    param([string]$ProjectRoot)
+    foreach ($name in @('.brainforge', 'brainforge')) {
+        $p = Join-Path $ProjectRoot $name
+        if (Test-KitLayout $p) {
+            return (Resolve-Path -LiteralPath $p).Path
+        }
+    }
+    return $null
+}
+
 function Find-KitFolder {
     param([string]$SearchRoot)
     Get-ChildItem -Path $SearchRoot -Recurse -Directory -ErrorAction SilentlyContinue |
@@ -339,6 +350,13 @@ if ($NoMenu) {
     $initArgs += @("--adapter", "all", "--no-menu")
 } elseif ($Adapter) {
     $initArgs += @("--adapter", $Adapter)
+}
+
+# v1.0.0 CLI only discovers `brainforge/`; host kit is `.brainforge/` after bf.ps1.
+$hostKit = Get-HostKitPath -ProjectRoot $ProjectRoot
+if ($hostKit) {
+    $env:BRAINFORGE_KIT = $hostKit
+    $initArgs = @("--kit", $hostKit) + $initArgs
 }
 
 Write-Host ""

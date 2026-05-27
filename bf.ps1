@@ -332,6 +332,12 @@ if ($needExe) {
     if ($tag) {
         Install-Executable -Repository $Repo -Tag $tag -ProjectRoot $ProjectRoot
         Write-Info "CLI instalado (release $tag)."
+        $devExe = Find-DevExecutable -StartDir $ProjectRoot
+        if ($devExe) {
+            Copy-Item -LiteralPath $devExe -Destination $exePath -Force
+            Unblock-File -LiteralPath $exePath -ErrorAction SilentlyContinue
+            Write-Info "CLI substituido por build local (mais recente): $devExe"
+        }
     } else {
         $devExe = Find-DevExecutable -StartDir $ProjectRoot
         if ($devExe) {

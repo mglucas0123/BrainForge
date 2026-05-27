@@ -11,8 +11,5 @@ cursor = true
 copilot = true
 antigravity = true
 
-[sync]
-mode = "thin"   # thin = bridges only | mirror = full .cursor copy
-
 [mcp]
 enabled = true

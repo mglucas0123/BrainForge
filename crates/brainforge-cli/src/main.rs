@@ -269,17 +269,17 @@ fn main() -> Result<()> {
         embed_commands,
     } = &cli.command
     {
-        return cmd_init(
-            cli.target.clone(),
-            cli.kit.as_deref(),
-            adapter,
-            *no_menu,
-            *show,
-            *uninstall,
-            *force,
-            *no_exe,
-            *embed_commands,
-        );
+        return cmd_init(InitCmd {
+            target: cli.target.clone(),
+            kit: cli.kit.as_deref(),
+            adapter_args: adapter,
+            no_menu: *no_menu,
+            show: *show,
+            uninstall: *uninstall,
+            force: *force,
+            no_exe: *no_exe,
+            embed_commands: *embed_commands,
+        });
     }
 
     if let Commands::Install {
@@ -414,23 +414,26 @@ fn resolve_source_kit(kit_override: Option<&std::path::Path>) -> Result<PathBuf>
     discover_source_kit(kit_override)
 }
 
-fn cmd_init(
+struct InitCmd<'a> {
     target: Option<PathBuf>,
-    kit_override: Option<&std::path::Path>,
-    adapter_args: &[AdapterArg],
+    kit: Option<&'a std::path::Path>,
+    adapter_args: &'a [AdapterArg],
     no_menu: bool,
     show: bool,
     uninstall: bool,
     force: bool,
     no_exe: bool,
     embed_commands: bool,
-) -> Result<()> {
-    let project = target
+}
+
+fn cmd_init(cmd: InitCmd<'_>) -> Result<()> {
+    let project = cmd
+        .target
         .unwrap_or_else(|| std::env::current_dir().expect("cwd"))
         .canonicalize()
         .context("project directory")?;
 
-    if show {
+    if cmd.show {
         let paths = KitPaths::resolve(&project, None)?;
         println!(
             "{} {}",
@@ -445,9 +448,9 @@ fn cmd_init(
         return Ok(());
     }
 
-    let adapters = resolve_adapters(adapter_args, no_menu)?;
+    let adapters = resolve_adapters(cmd.adapter_args, cmd.no_menu)?;
 
-    if uninstall {
+    if cmd.uninstall {
         println!(
             "{} {}",
             style("BrainForge uninstall →").yellow().bold(),
@@ -459,7 +462,7 @@ fn cmd_init(
         return Ok(());
     }
 
-    let source_kit = discover_source_kit(kit_override)?;
+    let source_kit = discover_source_kit(cmd.kit)?;
     println!(
         "{} {}",
         style("BrainForge init →").cyan().bold(),
@@ -477,7 +480,7 @@ fn cmd_init(
     );
     println!();
 
-    let exe_source = if no_exe {
+    let exe_source = if cmd.no_exe {
         None
     } else {
         Some(std::env::current_exe().context("current_exe")?)
@@ -489,9 +492,9 @@ fn cmd_init(
         exe_source.as_deref(),
         &adapters,
         InitOptions {
-            force_kit: force,
-            copy_exe: !no_exe,
-            embed_commands,
+            force_kit: cmd.force,
+            copy_exe: !cmd.no_exe,
+            embed_commands: cmd.embed_commands,
         },
     )?;
 

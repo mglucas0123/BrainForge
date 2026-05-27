@@ -32,10 +32,20 @@ jobs:
           "$($hash.Hash)  brainforge.exe" | Out-File -Encoding ascii brainforge.exe.sha256
           Get-Content brainforge.exe.sha256
 
+      - name: Pack kit zip
+        shell: pwsh
+        run: |
+          Compress-Archive -Path brainforge -DestinationPath brainforge-kit.zip -Force
+          Get-Item brainforge-kit.zip | Format-List Name, Length
+
       - name: Upload release assets
         uses: softprops/action-gh-release@v2
         with:
+          name: BrainForge ${{ github.ref_name }}
           files: |
             target/release/brainforge.exe
             brainforge.exe.sha256
+            brainforge-kit.zip
+            bf.ps1
+            install.ps1
           generate_release_notes: true

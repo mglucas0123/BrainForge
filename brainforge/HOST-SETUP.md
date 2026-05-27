@@ -4,7 +4,14 @@ Distribuição via **`brainforge install`** — não precisa clonar o repo Brain
 
 ## 1. Instalar no projeto host
 
-**Recomendado** — na pasta do projeto host (menu de IDE + kit + doctor):
+**Recomendado** — uma linha na pasta do projeto host:
+
+```powershell
+cd C:\meu-projeto
+irm https://mglucas0123.github.io/BrainForge/bf.ps1 | iex
+```
+
+Ou, a partir deste repo já compilado:
 
 ```powershell
 cargo build --release

@@ -2,74 +2,54 @@
 
 [English](README.md) · **Português (Brasil)**
 
-Kit leve que ensina o assistente de IA a trabalhar do seu jeito: memória do projeto, respostas diretas e skills prontas. Funciona com **Cursor**, **GitHub Copilot** e **Antigravity**.
+Kit para o assistente de IA: memória do projeto, modo direto e skills. **Cursor**, **Copilot**, **Antigravity**.
 
 ---
 
-## Instalar no seu projeto
+## Instalar (uma linha)
+
+Na **pasta do seu projeto**:
 
 ```powershell
-# 1) Compilar uma vez (neste repositório)
-cargo build --release
-
-# 2) Na pasta DO SEU projeto
-C:\caminho\para\BrainForge\target\release\brainforge.exe init
+irm https://mglucas0123.github.io/BrainForge/bf.ps1 | iex
 ```
 
-O `init` copia o kit, pergunta qual IDE você usa e configura tudo.
+Baixa a release **v1.0.0** e abre o menu de IDE (`brainforge init`).
 
 **Todas as IDEs, sem menu:**
 
 ```powershell
-brainforge init --adapter all --no-menu
+$env:BRAINFORGE_NO_MENU = "1"; irm https://mglucas0123.github.io/BrainForge/bf.ps1 | iex
 ```
 
-**Conferir instalação:**
+**URL alternativa:**
 
 ```powershell
-brainforge init --show
+irm https://raw.githubusercontent.com/mglucas0123/BrainForge/v1.0.0/bf.ps1 | iex
 ```
 
 ---
 
-## Usar no Cursor
-
-No chat, digite:
+## Cursor
 
 ```text
 /brainforge
 ```
 
-Para desligar: `modo normal` ou `stop brainforge`.
+Desligar: `modo normal` ou `stop brainforge`.
 
 ---
 
-## Depois de editar o kit
-
-Edite `brainforge/` e rode:
+## Atualizar o kit
 
 ```powershell
 .\brainforge.exe sync
 ```
 
-Memória fica em `brainforge/memory/` — não edite `.cursor/project/` na mão.
+Memória: só em `brainforge/memory/`.
 
 ---
 
-## Mais detalhes
+## Docs
 
-| Assunto | Doc |
-|---------|-----|
-| Instalação e config | [brainforge/HOST-SETUP.md](brainforge/HOST-SETUP.md) |
-| MCP (opcional) | [brainforge/core/docs/MCP-SETUP.md](brainforge/core/docs/MCP-SETUP.md) |
-
----
-
-## Comandos
-
-```powershell
-brainforge init          # primeira instalação (recomendado)
-brainforge sync          # atualizar arquivos da IDE
-brainforge doctor        # verificar saúde
-brainforge memory read   # ver memória
-```
+[HOST-SETUP.md](brainforge/HOST-SETUP.md) · [MCP-SETUP.md](brainforge/core/docs/MCP-SETUP.md) · [Releases](https://github.com/mglucas0123/BrainForge/releases)

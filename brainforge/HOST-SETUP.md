@@ -4,10 +4,17 @@ Distribuição via **`brainforge install`** — não precisa clonar o repo Brain
 
 ## 1. Instalar no projeto host
 
-No repo **BrainForge** (ou com `BRAINFORGE_KIT` apontando para o kit):
+**Recomendado** — na pasta do projeto host (menu de IDE + kit + doctor):
 
 ```powershell
 cargo build --release
+cd C:\meu-projeto
+C:\path\to\BrainForge\target\release\brainforge.exe init
+```
+
+Alternativa explícita (sem menu; usa `[install]` do `brainforge.toml`):
+
+```powershell
 .\target\release\brainforge.exe install C:\meu-projeto --with-exe
 ```
 

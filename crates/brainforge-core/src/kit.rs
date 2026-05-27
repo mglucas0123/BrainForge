@@ -53,7 +53,7 @@ impl KitPaths {
     }
 }
 
-fn validate_kit(kit_root: &Path) -> Result<()> {
+pub fn validate_kit(kit_root: &Path) -> Result<()> {
     let marker = kit_root.join("core").join("BRAINFORGE.md");
     if !marker.is_file() {
         bail!(
@@ -64,7 +64,8 @@ fn validate_kit(kit_root: &Path) -> Result<()> {
     Ok(())
 }
 
-fn discover_kit(start: &Path) -> Result<PathBuf> {
+/// Walk parents from `start` looking for `brainforge/` (or `start` if it is the kit root).
+pub fn discover_kit(start: &Path) -> Result<PathBuf> {
     let mut cur = start
         .canonicalize()
         .with_context(|| format!("canonicalize {}", start.display()))?;

@@ -4,9 +4,9 @@ use anyhow::{Context, Result, bail};
 use brainforge_core::{
     Adapter, CompressResult, DoctorStatus, InstallOptions, KitPaths, MemoryAuditReport,
     MemoryStats, MemoryTarget, WriteSkipReason, audit_memory, compress_memory, format_mcp_config_json,
-    discover_transcripts_dir, extract_text_lines, install_optional_skill, list_sessions,
-    load_catalog, read_memory, refresh_memory, run_doctor, run_install, run_sync,
-    search_transcripts, sync_memory_to_cursor,
+    discover_source_kit, discover_transcripts_dir, extract_text_lines, install_optional_skill,
+    list_sessions, load_catalog, read_memory, refresh_memory, run_doctor, run_init, run_install,
+    run_sync, run_uninstall, search_transcripts, sync_memory_to_cursor, InitOptions,
 };
 use clap::{Parser, Subcommand, ValueEnum};
 use console::style;
@@ -66,6 +66,36 @@ enum Commands {
     },
     /// MCP stdio server (Cursor, VS Code, Antigravity)
     Mcp,
+    /// Bootstrap host project: kit + IDE menu + sync + doctor (recommended)
+    Init {
+        /// Adapters (cursor,copilot,antigravity). Omit for interactive menu.
+        #[arg(short, long, value_delimiter = ',')]
+        adapter: Vec<AdapterArg>,
+
+        /// Skip IDE menu when no --adapter (use all adapters)
+        #[arg(long)]
+        no_menu: bool,
+
+        /// Verify install (doctor only)
+        #[arg(long)]
+        show: bool,
+
+        /// Remove adapter outputs created by sync
+        #[arg(long)]
+        uninstall: bool,
+
+        /// Replace existing brainforge/ kit
+        #[arg(long)]
+        force: bool,
+
+        /// Do not copy this CLI as brainforge.exe in the project
+        #[arg(long)]
+        no_exe: bool,
+
+        /// Embed slash commands if kit commands/ is missing
+        #[arg(long)]
+        embed_commands: bool,
+    },
     /// Copy kit + optional exe into a host project; writes brainforge.toml; runs sync
     Install {
         /// Target project directory
@@ -229,6 +259,29 @@ impl From<AdapterArg> for Vec<Adapter> {
 fn main() -> Result<()> {
     let cli = Cli::parse();
 
+    if let Commands::Init {
+        adapter,
+        no_menu,
+        show,
+        uninstall,
+        force,
+        no_exe,
+        embed_commands,
+    } = &cli.command
+    {
+        return cmd_init(
+            cli.target.clone(),
+            cli.kit.as_deref(),
+            adapter,
+            *no_menu,
+            *show,
+            *uninstall,
+            *force,
+            *no_exe,
+            *embed_commands,
+        );
+    }
+
     if let Commands::Install {
         path,
         force,
@@ -350,6 +403,7 @@ fn main() -> Result<()> {
             RecallAction::Last { lines } => cmd_recall_last(&paths, lines)?,
             RecallAction::Search { query, limit } => cmd_recall_search(&paths, &query, limit)?,
         },
+        Commands::Init { .. } => unreachable!("handled above"),
         Commands::Install { .. } => unreachable!("handled above"),
     }
 
@@ -357,9 +411,146 @@ fn main() -> Result<()> {
 }
 
 fn resolve_source_kit(kit_override: Option<&std::path::Path>) -> Result<PathBuf> {
-    let cwd = std::env::current_dir().context("cwd")?;
-    let paths = KitPaths::resolve(&cwd, kit_override)?;
-    Ok(paths.kit_root)
+    discover_source_kit(kit_override)
+}
+
+fn cmd_init(
+    target: Option<PathBuf>,
+    kit_override: Option<&std::path::Path>,
+    adapter_args: &[AdapterArg],
+    no_menu: bool,
+    show: bool,
+    uninstall: bool,
+    force: bool,
+    no_exe: bool,
+    embed_commands: bool,
+) -> Result<()> {
+    let project = target
+        .unwrap_or_else(|| std::env::current_dir().expect("cwd"))
+        .canonicalize()
+        .context("project directory")?;
+
+    if show {
+        let paths = KitPaths::resolve(&project, None)?;
+        println!(
+            "{} {}",
+            style("BrainForge init --show").cyan().bold(),
+            project.display()
+        );
+        let report = run_doctor(&paths)?;
+        print_doctor(&report);
+        if report.has_fail() {
+            bail!("doctor: falhas encontradas");
+        }
+        return Ok(());
+    }
+
+    let adapters = resolve_adapters(adapter_args, no_menu)?;
+
+    if uninstall {
+        println!(
+            "{} {}",
+            style("BrainForge uninstall →").yellow().bold(),
+            project.display()
+        );
+        run_uninstall(&project, &adapters)?;
+        println!();
+        println!("{}", style("Removido. O kit brainforge/ não foi apagado.").dim());
+        return Ok(());
+    }
+
+    let source_kit = discover_source_kit(kit_override)?;
+    println!(
+        "{} {}",
+        style("BrainForge init →").cyan().bold(),
+        project.display()
+    );
+    println!("{} {}", style("Kit source:").dim(), source_kit.display());
+    println!(
+        "{} {}",
+        style("IDEs:").dim(),
+        adapters
+            .iter()
+            .map(|a| a.label())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+    println!();
+
+    let exe_source = if no_exe {
+        None
+    } else {
+        Some(std::env::current_exe().context("current_exe")?)
+    };
+
+    let report = run_init(
+        &source_kit,
+        &project,
+        exe_source.as_deref(),
+        &adapters,
+        InitOptions {
+            force_kit: force,
+            copy_exe: !no_exe,
+            embed_commands,
+        },
+    )?;
+
+    if report.kit_installed {
+        println!("{} brainforge/", style("OK").green());
+    }
+    if report.exe_copied {
+        println!("{} brainforge.exe", style("OK").green());
+    }
+    if report.config_updated {
+        println!("{} brainforge.toml", style("OK").green());
+    }
+    println!(
+        "{} sync: {}",
+        style("OK").green(),
+        report
+            .adapters_synced
+            .iter()
+            .map(|a| a.label())
+            .collect::<Vec<_>>()
+            .join(", ")
+    );
+
+    print_doctor(&report.doctor);
+
+    println!();
+    print_init_next_steps(&project, &adapters);
+
+    if report.doctor.has_fail() {
+        bail!("init concluído com falhas no doctor");
+    }
+
+    Ok(())
+}
+
+fn print_init_next_steps(project: &std::path::Path, adapters: &[Adapter]) {
+    println!("{}", style("Próximos passos:").cyan().bold());
+    if adapters.contains(&Adapter::Cursor) || adapters.contains(&Adapter::Antigravity) {
+        println!("  1. Abra o projeto no Cursor e digite: {}", style("/brainforge").green());
+    }
+    if adapters.contains(&Adapter::Copilot) {
+        println!("  2. Copilot: use “BrainForge on” ou leia brainforge/core/BRAINFORGE.md");
+    }
+    println!(
+        "  · Verificar de novo: {}",
+        style("brainforge init --show").dim()
+    );
+    println!(
+        "  · MCP (opcional): {} --print-mcp-config",
+        style(format!(
+            "{} install .",
+            project.join("brainforge.exe").display()
+        ))
+        .dim()
+    );
+    println!(
+        "  · RTK (opcional): {}",
+        style(r"brainforge\tools\rtk\install-rtk-local.ps1").dim()
+    );
 }
 
 fn cmd_install(

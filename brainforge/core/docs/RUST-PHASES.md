@@ -111,6 +111,7 @@ Ver histórico acima. Workspace + `brainforge` binário.
 ## Referência rápida — comandos
 
 ```powershell
+brainforge init [-a cursor,copilot,antigravity] [--no-menu] [--show] [--uninstall]
 brainforge sync [-a all] [--no-menu] [--embed-commands]
 brainforge doctor
 brainforge paths

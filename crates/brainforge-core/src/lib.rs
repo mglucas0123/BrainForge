@@ -3,6 +3,7 @@ mod config;
 mod copy_util;
 mod doctor;
 mod embedded;
+mod init;
 mod install;
 mod recall;
 mod security;
@@ -15,6 +16,7 @@ pub use adapter::Adapter;
 pub use config::{BrainforgeConfig, load_config};
 pub use doctor::{DoctorReport, DoctorStatus, run_doctor};
 pub use embedded::{embedded_command_count, write_embedded_commands};
+pub use init::{InitOptions, InitReport, discover_source_kit, run_init, run_uninstall};
 pub use install::{InstallOptions, InstallReport, format_mcp_config_json, run_install};
 pub use recall::{
     TranscriptSession, cursor_project_slug, discover_transcripts_dir, extract_text_lines,

@@ -5,6 +5,7 @@ use serde::Deserialize;
 
 use crate::adapter::Adapter;
 
+#[allow(dead_code)]
 pub const DEFAULT_CONFIG_TEMPLATE: &str = r#"# BrainForge host config
 # Docs: brainforge/HOST-SETUP.md
 
@@ -123,9 +124,58 @@ pub fn write_default_config_if_missing(project_root: &Path) -> Result<bool> {
     if path.is_file() {
         return Ok(false);
     }
-    std::fs::write(&path, DEFAULT_CONFIG_TEMPLATE)
+    let cfg = BrainforgeConfig::default();
+    std::fs::write(&path, render_brainforge_toml(&cfg))
         .with_context(|| format!("write {}", path.display()))?;
     Ok(true)
+}
+
+/// Write or update `brainforge.toml` `[install]` flags from selected adapters.
+pub fn write_config_install(project_root: &Path, adapters: &[Adapter]) -> Result<bool> {
+    let path = project_root.join("brainforge.toml");
+    let mut cfg = load_config(project_root);
+    cfg.install.cursor = adapters.contains(&Adapter::Cursor);
+    cfg.install.copilot = adapters.contains(&Adapter::Copilot);
+    cfg.install.antigravity = adapters.contains(&Adapter::Antigravity);
+
+    let text = render_brainforge_toml(&cfg);
+    let changed = if path.is_file() {
+        std::fs::read_to_string(&path).ok().as_deref() != Some(text.as_str())
+    } else {
+        true
+    };
+    std::fs::write(&path, text).with_context(|| format!("write {}", path.display()))?;
+    Ok(changed)
+}
+
+fn render_brainforge_toml(cfg: &BrainforgeConfig) -> String {
+    format!(
+        r#"# BrainForge host config
+# Docs: brainforge/HOST-SETUP.md
+
+[brainforge]
+version = "{version}"
+memory_dir = "{memory_dir}"
+caveman_level = "{caveman_level}"   # lite | full | ultra
+language = "{language}"
+
+[install]
+cursor = {cursor}
+copilot = {copilot}
+antigravity = {antigravity}
+
+[mcp]
+enabled = {mcp_enabled}
+"#,
+        version = cfg.brainforge.version,
+        memory_dir = cfg.brainforge.memory_dir,
+        caveman_level = cfg.brainforge.caveman_level,
+        language = cfg.brainforge.language,
+        cursor = cfg.install.cursor,
+        copilot = cfg.install.copilot,
+        antigravity = cfg.install.antigravity,
+        mcp_enabled = cfg.mcp.enabled,
+    )
 }
 
 /// Expected canonical memory directory relative to project root.

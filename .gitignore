@@ -1,0 +1,21 @@
+/target/
+**/*.rs.bk
+
+# Generated in host projects by `brainforge sync` (do not commit)
+.agents/
+.cursor/
+
+# CI for this repo only (not Copilot output)
+.github/*
+!.github/workflows/
+
+# Root memory stub — canonical: brainforge/memory/
+.context.md
+
+# Secrets / local
+.env
+.env.*
+
+# OS
+Thumbs.db
+.DS_Store

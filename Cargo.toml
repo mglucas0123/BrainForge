@@ -1,0 +1,17 @@
+[workspace]
+resolver = "2"
+members = ["crates/brainforge-core", "crates/brainforge-cli", "crates/brainforge-mcp"]
+default-members = ["crates/brainforge-cli"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+repository = "https://github.com/mglucas0123/BrainForge"
+authors = ["BrainForge Contributors"]
+
+[profile.release]
+lto = true
+codegen-units = 1
+strip = true
+opt-level = "z"

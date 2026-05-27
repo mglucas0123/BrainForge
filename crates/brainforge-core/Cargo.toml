@@ -1,0 +1,20 @@
+[package]
+name = "brainforge-core"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "BrainForge kit sync, doctor, and path resolution"
+
+[dependencies]
+anyhow = "1"
+thiserror = "2"
+regex = "1"
+walkdir = "2"
+fs_extra = "1"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1.0"
+toml = "0.8"
+include_dir = "0.7.4"
+
+[dev-dependencies]
+tempfile = "3"

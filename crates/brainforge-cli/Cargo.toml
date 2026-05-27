@@ -1,0 +1,19 @@
+[package]
+name = "brainforge-cli"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "BrainForge CLI — sync kit to Cursor, Copilot, Antigravity"
+
+[[bin]]
+name = "brainforge"
+path = "src/main.rs"
+
+[dependencies]
+anyhow = "1"
+brainforge-core = { path = "../brainforge-core" }
+brainforge-mcp = { path = "../brainforge-mcp" }
+clap = { version = "4", features = ["derive"] }
+dialoguer = "0.11"
+console = "0.15"
+arboard = "3.6"

@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "optional_skills": [
+    {
+      "id": "writing-plans",
+      "name": "writing-plans",
+      "description": "Use when: need a short implementation plan before coding.",
+      "source_path": "skills-optional/writing-plans",
+      "tags": ["planning", "task-master"],
+      "effort": "S"
+    }
+  ]
+}

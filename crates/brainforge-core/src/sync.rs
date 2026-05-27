@@ -1,0 +1,146 @@
+use anyhow::Result;
+
+use crate::adapter::Adapter;
+use crate::copy_util::{self, copy_file, copy_tree, ensure_dir, mirror_dir_contents};
+use crate::kit::KitPaths;
+
+pub fn run_sync(paths: &KitPaths, adapters: &[Adapter], embed_commands: bool) -> Result<()> {
+    for adapter in adapters {
+        match adapter {
+            Adapter::Cursor => sync_cursor(paths, embed_commands)?,
+            Adapter::Copilot => sync_copilot(paths)?,
+            Adapter::Antigravity => sync_antigravity(paths)?,
+        }
+    }
+    sync_agents_md(paths)?;
+    Ok(())
+}
+
+fn sync_cursor(paths: &KitPaths, embed_commands: bool) -> Result<()> {
+    let cursor = paths.project_root.join(".cursor");
+    let core = paths.core();
+
+    ensure_dir(&cursor)?;
+    ensure_dir(&cursor.join("skills"))?;
+    ensure_dir(&cursor.join("commands"))?;
+    ensure_dir(&cursor.join("rules"))?;
+    ensure_dir(&cursor.join("project"))?;
+    ensure_dir(&cursor.join("docs"))?;
+
+    let skills_src = core.join("skills");
+    if skills_src.is_dir() {
+        let skills_dst = cursor.join("skills");
+        copy_util::clear_dir_children(&skills_dst)?;
+        mirror_dir_contents(&skills_src, &skills_dst)?;
+    }
+
+    let optional_src = core.join("skills-optional");
+    if optional_src.is_dir() {
+        let optional_dst = cursor.join("skills-optional");
+        ensure_dir(&optional_dst)?;
+        mirror_dir_contents(&optional_src, &optional_dst)?;
+    }
+
+    copy_tree(&core.join("docs"), &cursor.join("docs"))?;
+
+    for name in ["skills-catalog.json", "installed-skills.json"] {
+        let src = core.join(name);
+        if src.is_file() {
+            copy_file(&src, &cursor.join(name))?;
+        }
+    }
+
+    let commands_dst = cursor.join("commands");
+    let commands_src = core.join("commands");
+    if commands_src.is_dir() {
+        mirror_dir_contents(&commands_src, &commands_dst)?;
+    } else if embed_commands {
+        let n = crate::embedded::write_embedded_commands(&commands_dst)?;
+        println!("[cursor] embedded {n} command(s) (kit commands/ missing)");
+    }
+
+    sync_cursor_hooks_example(paths)?;
+
+    let rules_src = paths.adapters().join("cursor").join("rules");
+    if rules_src.is_dir() {
+        mirror_dir_contents(&rules_src, &cursor.join("rules"))?;
+    }
+
+    for name in [".context.md", ".user.md"] {
+        let src = paths.memory().join(name);
+        if src.is_file() {
+            copy_file(&src, &cursor.join("project").join(name))?;
+        }
+    }
+
+    if !paths.rtk_exe().is_file() {
+        eprintln!(
+            "warn: RTK missing at {} — run install-rtk-local.ps1",
+            paths.rtk_exe().display()
+        );
+    }
+
+    println!("[cursor] .cursor/ synced");
+    Ok(())
+}
+
+fn sync_copilot(paths: &KitPaths) -> Result<()> {
+    let github = paths.project_root.join(".github");
+    ensure_dir(&github)?;
+    let src = paths
+        .adapters()
+        .join("copilot")
+        .join("copilot-instructions.md");
+    if src.is_file() {
+        copy_file(&src, &github.join("copilot-instructions.md"))?;
+        println!("[copilot] .github/copilot-instructions.md");
+    }
+    Ok(())
+}
+
+fn sync_antigravity(paths: &KitPaths) -> Result<()> {
+    let agents = paths.project_root.join(".agents");
+    ensure_dir(&agents.join("rules"))?;
+    ensure_dir(&agents.join("workflows"))?;
+
+    let rules_src = paths.adapters().join("antigravity").join("rules");
+    if rules_src.is_dir() {
+        mirror_dir_contents(&rules_src, &agents.join("rules"))?;
+    }
+
+    let wf_src = paths.adapters().join("antigravity").join("workflows");
+    if wf_src.is_dir() {
+        mirror_dir_contents(&wf_src, &agents.join("workflows"))?;
+    }
+
+    println!("[antigravity] .agents/ synced");
+    Ok(())
+}
+
+fn sync_agents_md(paths: &KitPaths) -> Result<()> {
+    let src = paths.adapters().join("AGENTS.md");
+    if !src.is_file() {
+        return Ok(());
+    }
+    let dest = paths.project_root.join("AGENTS.md");
+    if dest.is_file() {
+        return Ok(());
+    }
+    copy_util::copy_file(&src, &dest)?;
+    println!("[host] AGENTS.md (thin bridge — created)");
+    Ok(())
+}
+
+fn sync_cursor_hooks_example(paths: &KitPaths) -> Result<()> {
+    let example = paths
+        .adapters()
+        .join("cursor")
+        .join("hooks.example");
+    if !example.is_dir() {
+        return Ok(());
+    }
+    let dest = paths.project_root.join(".cursor").join("hooks.example");
+    copy_util::mirror_dir_contents(&example, &dest)?;
+    println!("[cursor] .cursor/hooks.example/ (opt-in — see brainforge/core/docs/CURSOR-HOOKS.md)");
+    Ok(())
+}

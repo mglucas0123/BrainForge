@@ -1,0 +1,41 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Build release
+        run: cargo build --release -p brainforge-cli
+
+      - name: SHA256 checksum
+        shell: pwsh
+        run: |
+          $exe = "target/release/brainforge.exe"
+          $hash = Get-FileHash -Path $exe -Algorithm SHA256
+          "$($hash.Hash)  brainforge.exe" | Out-File -Encoding ascii brainforge.exe.sha256
+          Get-Content brainforge.exe.sha256
+
+      - name: Upload release assets
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            target/release/brainforge.exe
+            brainforge.exe.sha256
+          generate_release_notes: true

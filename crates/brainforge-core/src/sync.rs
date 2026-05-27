@@ -45,6 +45,7 @@ fn sync_cursor(paths: &KitPaths, embed_commands: bool) -> Result<()> {
     }
 
     link_or_copy_cursor_memory(paths)?;
+    link_cursor_kit_bridges(paths)?;
 
     write_cursor_bridge_readme(paths)?;
     write_cursor_generated_marker(paths)?;
@@ -56,24 +57,143 @@ fn sync_cursor(paths: &KitPaths, embed_commands: bool) -> Result<()> {
         );
     }
 
-    println!("[cursor] bridge → .cursor/ (rules + commands); kit em .brainforge/");
+    println!("[cursor] bridge → .cursor/ (links + rules + commands); kit em .brainforge/");
     Ok(())
 }
 
-/// Remove artifacts from older full-mirror syncs (one-time cleanup).
+/// Remove full **copies** from older mirror syncs; keep symlinks/junctions.
 fn prune_legacy_cursor_mirror(cursor: &Path) -> Result<()> {
     for name in ["skills", "skills-optional", "docs", "hooks.example"] {
         let p = cursor.join(name);
-        if p.is_dir() {
+        if p.is_dir() && !p.is_symlink() {
             fs::remove_dir_all(&p).with_context(|| format!("remove {}", p.display()))?;
         }
     }
     for name in ["skills-catalog.json", "installed-skills.json"] {
         let p = cursor.join(name);
-        if p.is_file() {
+        if p.is_file() && !p.is_symlink() {
             fs::remove_file(&p).with_context(|| format!("remove {}", p.display()))?;
         }
     }
+    Ok(())
+}
+
+/// Junctions/symlinks so Cursor sees the usual tree; canonical files stay in `.brainforge/`.
+fn link_cursor_kit_bridges(paths: &KitPaths) -> Result<()> {
+    let cursor = paths.project_root.join(".cursor");
+    let core = paths.core();
+
+    link_cursor_dir(&cursor, "skills", &core.join("skills"))?;
+    link_cursor_dir(&cursor, "skills-optional", &core.join("skills-optional"))?;
+    link_cursor_dir(&cursor, "docs", &core.join("docs"))?;
+    link_cursor_dir(
+        &cursor,
+        "hooks.example",
+        &paths.adapters().join("cursor").join("hooks.example"),
+    )?;
+    link_cursor_file(&cursor, "skills-catalog.json", &core.join("skills-catalog.json"))?;
+    link_cursor_file(
+        &cursor,
+        "installed-skills.json",
+        &core.join("installed-skills.json"),
+    )?;
+    Ok(())
+}
+
+fn clear_path_for_link(path: &Path) -> Result<()> {
+    if !path.exists() {
+        return Ok(());
+    }
+    if path.is_symlink() {
+        fs::remove_file(path).with_context(|| format!("remove link {}", path.display()))?;
+    } else if path.is_dir() {
+        fs::remove_dir_all(path).with_context(|| format!("remove dir {}", path.display()))?;
+    } else {
+        fs::remove_file(path).with_context(|| format!("remove file {}", path.display()))?;
+    }
+    Ok(())
+}
+
+fn link_cursor_dir(cursor: &Path, name: &str, target: &Path) -> Result<()> {
+    if !target.is_dir() {
+        return Ok(());
+    }
+    let target = target
+        .canonicalize()
+        .with_context(|| format!("canonicalize {}", target.display()))?;
+    let link = cursor.join(name);
+    clear_path_for_link(&link)?;
+    ensure_dir(cursor)?;
+
+    #[cfg(windows)]
+    {
+        if std::os::windows::fs::symlink_dir(&target, &link).is_ok() {
+            println!("[cursor] .cursor/{name} → {}", target.display());
+            return Ok(());
+        }
+        if windows_directory_junction(&link, &target) {
+            println!("[cursor] .cursor/{name} → {} (junction)", target.display());
+            return Ok(());
+        }
+    }
+
+    #[cfg(unix)]
+    if std::os::unix::fs::symlink(&target, &link).is_ok() {
+        println!("[cursor] .cursor/{name} → {}", target.display());
+        return Ok(());
+    }
+
+    eprintln!(
+        "warn: could not link .cursor/{name} → {}; mirroring copy",
+        target.display()
+    );
+    mirror_dir_contents(&target, &link)?;
+    println!("[cursor] .cursor/{name} (mirror fallback)");
+    Ok(())
+}
+
+#[cfg(windows)]
+fn windows_directory_junction(link: &Path, target: &Path) -> bool {
+    use std::process::Command;
+
+    Command::new("cmd")
+        .args([
+            "/C",
+            "mklink",
+            "/J",
+            &link.to_string_lossy(),
+            &target.to_string_lossy(),
+        ])
+        .status()
+        .map(|s| s.success())
+        .unwrap_or(false)
+}
+
+fn link_cursor_file(cursor: &Path, name: &str, target: &Path) -> Result<()> {
+    if !target.is_file() {
+        return Ok(());
+    }
+    let target = target
+        .canonicalize()
+        .with_context(|| format!("canonicalize {}", target.display()))?;
+    let link = cursor.join(name);
+    clear_path_for_link(&link)?;
+    ensure_dir(cursor)?;
+
+    #[cfg(windows)]
+    if std::os::windows::fs::symlink_file(&target, &link).is_ok() {
+        println!("[cursor] .cursor/{name} → {}", target.display());
+        return Ok(());
+    }
+
+    #[cfg(unix)]
+    if std::os::unix::fs::symlink(&target, &link).is_ok() {
+        println!("[cursor] .cursor/{name} → {}", target.display());
+        return Ok(());
+    }
+
+    copy_util::copy_file(&target, &link)?;
+    println!("[cursor] .cursor/{name} (copy — link failed)");
     Ok(())
 }
 
@@ -84,14 +204,7 @@ fn link_or_copy_cursor_memory(paths: &KitPaths) -> Result<()> {
         .canonicalize()
         .with_context(|| "canonicalize .brainforge/memory")?;
 
-    if link.exists() {
-        if link.is_symlink() {
-            fs::remove_file(&link).ok();
-        } else if link.is_dir() {
-            fs::remove_dir_all(&link).ok();
-        }
-    }
-
+    clear_path_for_link(&link)?;
     if let Some(parent) = link.parent() {
         ensure_dir(parent)?;
     }
@@ -99,6 +212,10 @@ fn link_or_copy_cursor_memory(paths: &KitPaths) -> Result<()> {
     #[cfg(windows)]
     {
         if std::os::windows::fs::symlink_dir(&target, &link).is_ok() {
+            println!("[cursor] .cursor/project → .brainforge/memory (symlink)");
+            return Ok(());
+        }
+        if windows_directory_junction(&link, &target) {
             println!("[cursor] .cursor/project → .brainforge/memory (junction)");
             return Ok(());
         }
@@ -127,9 +244,11 @@ This folder is **not** a second copy of the kit.
 | `.brainforge/` | **Edit here** — skills, memory, core, adapters |
 | `.cursor/rules/` | Cursor always-on rule → points at `.brainforge/` |
 | `.cursor/commands/` | Slash commands (`/brainforge`, etc.) |
-| `.cursor/project/` | Link to `.brainforge/memory/` |
+| `.cursor/project/` | Link → `.brainforge/memory/` |
+| `.cursor/skills/` | Link → `.brainforge/core/skills/` |
+| `.cursor/docs/` | Link → `.brainforge/core/docs/` |
 
-Skills live under `.brainforge/core/skills/`.
+Edit skills only under `.brainforge/core/skills/`.
 
 To refresh: `brainforge sync`
 "#;

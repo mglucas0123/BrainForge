@@ -23,6 +23,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $script:CleanupDirs = [System.Collections.Generic.List[string]]::new()
+$script:InteractiveBootstrap = (-not $NoMenu) -and (-not $Adapter) -and (-not $SkipInit)
 
 if ($env:BRAINFORGE_VERSION) { $Version = $env:BRAINFORGE_VERSION }
 if ($env:BRAINFORGE_BRANCH) { $Branch = $env:BRAINFORGE_BRANCH }
@@ -36,11 +37,29 @@ if ([string]::IsNullOrWhiteSpace($Adapter)) {
 }
 
 function Write-Info([string]$Message) {
+    if ($script:InteractiveBootstrap) { return }
     Write-Host "[brainforge] $Message" -ForegroundColor Cyan
 }
 
 function Write-Warn([string]$Message) {
+    if ($script:InteractiveBootstrap) { return }
     Write-Host "[brainforge] $Message" -ForegroundColor Yellow
+}
+
+function Write-BootstrapProgress([string]$Message) {
+    if (-not $script:InteractiveBootstrap) {
+        Write-Info $Message
+        return
+    }
+    $line = "[brainforge] $Message"
+    if ($line.Length -gt 78) { $line = $line.Substring(0, 78) }
+    Write-Host ("`r{0,-78}" -f $line) -NoNewline -ForegroundColor DarkGray
+}
+
+function Finish-BootstrapProgress() {
+    if ($script:InteractiveBootstrap) {
+        Write-Host ""
+    }
 }
 
 function Get-DirectReleaseAssetUrl {
@@ -83,7 +102,7 @@ function Resolve-ReleaseTag {
         Write-Warn "API GitHub indisponivel (rate limit?). Tentando releases diretas..."
     }
 
-    foreach ($candidate in @("v1.0.1", "v1.0.0")) {
+    foreach ($candidate in @("v1.0.2", "v1.0.1", "v1.0.0")) {
         $probe = Get-DirectReleaseAssetUrl -Repository $Repository -Tag $candidate -AssetName "brainforge.exe"
         if (Test-ReleaseAssetExists -Url $probe) {
             Write-Info "Release detectada: $candidate"
@@ -127,7 +146,9 @@ function Save-HttpFile {
         [string]$Url,
         [string]$Destination
     )
-    Write-Info "Baixando: $Url"
+    $name = Split-Path $Url -Leaf
+    if ([string]::IsNullOrWhiteSpace($name)) { $name = "arquivo" }
+    Write-BootstrapProgress "Baixando $name..."
     Invoke-WebRequest -Uri $Url -OutFile $Destination -UseBasicParsing
 }
 
@@ -329,13 +350,14 @@ function Install-Executable {
         }
     }
 
-    return $exeDest
 }
 
 # ── main ──────────────────────────────────────────────────────────────
 
 $ProjectRoot = (Get-Location).Path
-Write-Info "Projeto: $ProjectRoot"
+if (-not $script:InteractiveBootstrap) {
+    Write-Info "Projeto: $ProjectRoot"
+}
 
 $tag = Resolve-ReleaseTag -Repository $Repo -Version $Version
 $kitRef = if ($tag) { $tag } else { $Branch }
@@ -356,7 +378,11 @@ if ($needKit) {
                 Save-HttpFile -Url $kitZipUrl -Destination $zipPath
                 Install-KitFromZip -ZipPath $zipPath -ProjectRoot $ProjectRoot
                 $kitInstalled = $true
-                Write-Info "Kit instalado (release $tag)."
+                Write-BootstrapProgress "Kit instalado ($tag)."
+                Finish-BootstrapProgress
+                if (-not $script:InteractiveBootstrap) {
+                    Write-Info "Kit instalado (release $tag)."
+                }
             } finally {
                 if (Test-Path $zipPath) { Remove-Item -LiteralPath $zipPath -Force -ErrorAction SilentlyContinue }
             }
@@ -377,8 +403,12 @@ $needExe = $Force -or -not (Test-Path -LiteralPath $exePath)
 
 if ($needExe) {
     if ($tag) {
-        Install-Executable -Repository $Repo -Tag $tag -ProjectRoot $ProjectRoot
-        Write-Info "CLI instalado (release $tag)."
+        [void](Install-Executable -Repository $Repo -Tag $tag -ProjectRoot $ProjectRoot)
+        Write-BootstrapProgress "CLI pronto ($tag)."
+        Finish-BootstrapProgress
+        if (-not $script:InteractiveBootstrap) {
+            Write-Info "CLI instalado (release $tag)."
+        }
         if ($env:BRAINFORGE_USE_DEV_EXE -eq "1") {
             $devExe = Find-DevExecutable -StartDir $ProjectRoot
             if ($devExe) {
@@ -429,12 +459,19 @@ if ($hostKit) {
     $initArgs = @("--kit", $hostKit) + $initArgs
 }
 
-Write-Host ""
-Write-Info "Executando: brainforge $($initArgs -join ' ')"
-Write-Host ""
+if ($script:InteractiveBootstrap) {
+    Finish-BootstrapProgress
+    Clear-Host
+    $env:BRAINFORGE_WELCOME = "1"
+} else {
+    Write-Host ""
+    Write-Info "Executando: brainforge $($initArgs -join ' ')"
+    Write-Host ""
+}
 
 & $exePath @initArgs
 $code = $LASTEXITCODE
+Remove-Item Env:BRAINFORGE_WELCOME -ErrorAction SilentlyContinue
 
 Remove-LegacyHostKitFolder -ProjectRoot $ProjectRoot
 

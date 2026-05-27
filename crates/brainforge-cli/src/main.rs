@@ -1,3 +1,5 @@
+mod ui;
+
 use std::path::PathBuf;
 
 use anyhow::{Context, Result, bail};
@@ -10,7 +12,7 @@ use brainforge_core::{
 };
 use clap::{Parser, Subcommand, ValueEnum};
 use console::style;
-use dialoguer::{MultiSelect, theme::ColorfulTheme};
+use dialoguer::MultiSelect;
 
 const LONG_VERSION: &str = concat!(
     env!("CARGO_PKG_VERSION"),
@@ -313,7 +315,7 @@ fn main() -> Result<()> {
             no_menu,
             embed_commands,
         } => {
-            let adapters = resolve_adapters(&adapter, no_menu)?;
+            let adapters = resolve_adapters(&adapter, no_menu, &paths.project_root)?;
             println!(
                 "{} {}",
                 style("BrainForge sync →").cyan().bold(),
@@ -448,7 +450,8 @@ fn cmd_init(cmd: InitCmd<'_>) -> Result<()> {
         return Ok(());
     }
 
-    let adapters = resolve_adapters(cmd.adapter_args, cmd.no_menu)?;
+    let adapters = resolve_adapters(cmd.adapter_args, cmd.no_menu, &project)?;
+    let interactive = cmd.adapter_args.is_empty() && !cmd.no_menu && ui::is_tty();
 
     if cmd.uninstall {
         println!(
@@ -463,22 +466,27 @@ fn cmd_init(cmd: InitCmd<'_>) -> Result<()> {
     }
 
     let source_kit = discover_source_kit(cmd.kit)?;
-    println!(
-        "{} {}",
-        style("BrainForge init →").cyan().bold(),
-        project.display()
-    );
-    println!("{} {}", style("Kit source:").dim(), source_kit.display());
-    println!(
-        "{} {}",
-        style("IDEs:").dim(),
-        adapters
-            .iter()
-            .map(|a| a.label())
-            .collect::<Vec<_>>()
-            .join(", ")
-    );
-    println!();
+
+    if interactive {
+        ui::print_setup_header(&adapters);
+    } else {
+        println!(
+            "{} {}",
+            style("BrainForge init →").cyan().bold(),
+            project.display()
+        );
+        println!("{} {}", style("Kit source:").dim(), source_kit.display());
+        println!(
+            "{} {}",
+            style("IDEs:").dim(),
+            adapters
+                .iter()
+                .map(|a| a.label())
+                .collect::<Vec<_>>()
+                .join(", ")
+        );
+        println!();
+    }
 
     let exe_source = if cmd.no_exe {
         None
@@ -1022,7 +1030,11 @@ fn print_memory_write_result(result: &CompressResult) {
 
 // ── Adapter resolution ──────────────────────────────────────────────
 
-fn resolve_adapters(args: &[AdapterArg], no_menu: bool) -> Result<Vec<Adapter>> {
+fn resolve_adapters(
+    args: &[AdapterArg],
+    no_menu: bool,
+    project: &std::path::Path,
+) -> Result<Vec<Adapter>> {
     if !args.is_empty() {
         let mut out = Vec::new();
         for a in args {
@@ -1039,10 +1051,14 @@ fn resolve_adapters(args: &[AdapterArg], no_menu: bool) -> Result<Vec<Adapter>> 
     if no_menu {
         return Ok(Adapter::ALL.to_vec());
     }
-    interactive_adapters()
+    interactive_adapters(project)
 }
 
-fn interactive_adapters() -> Result<Vec<Adapter>> {
+fn interactive_adapters(project: &std::path::Path) -> Result<Vec<Adapter>> {
+    if ui::welcome_enabled() || ui::is_tty() {
+        ui::print_welcome(project);
+    }
+
     let labels: Vec<String> = vec![
         format!("{}  {}", Adapter::Cursor.label(), Adapter::Cursor.detail()),
         format!("{}  {}", Adapter::Copilot.label(), Adapter::Copilot.detail()),
@@ -1055,10 +1071,10 @@ fn interactive_adapters() -> Result<Vec<Adapter>> {
     ];
 
     let defaults = vec![true, true, true, false];
-    let theme = ColorfulTheme::default();
+    let theme = ui::brainforge_theme();
 
     let picked = MultiSelect::with_theme(&theme)
-        .with_prompt("BrainForge — escolha IDE(s) (espaço marca, enter confirma)")
+        .with_prompt("Onde instalar o BrainForge?")
         .items(&labels)
         .defaults(&defaults)
         .interact()

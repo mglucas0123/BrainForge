@@ -1,4 +1,5 @@
 use std::env;
+use std::fs;
 use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
@@ -73,6 +74,29 @@ fn is_kit_root(path: &Path) -> bool {
     path.join("core").join("BRAINFORGE.md").is_file()
 }
 
+/// Drop duplicate `brainforge/` when canonical `.brainforge/` exists (v1.0.0 init side-effect).
+pub fn remove_legacy_host_kit(project_root: &Path) -> Result<bool> {
+    let modern = project_root.join(KIT_DIR);
+    let legacy = project_root.join(KIT_DIR_LEGACY);
+
+    if !is_kit_root(&modern) || !legacy.is_dir() || !is_kit_root(&legacy) {
+        return Ok(false);
+    }
+
+    if let (Ok(m), Ok(l)) = (modern.canonicalize(), legacy.canonicalize()) {
+        if m == l {
+            return Ok(false);
+        }
+    }
+
+    fs::remove_dir_all(&legacy).with_context(|| format!("remove legacy {}", legacy.display()))?;
+    eprintln!(
+        "[brainforge] removed legacy {}/ (canonical: {}/)",
+        KIT_DIR_LEGACY, KIT_DIR
+    );
+    Ok(true)
+}
+
 /// Walk parents from `start` looking for `.brainforge/` then legacy `brainforge/`.
 pub fn discover_kit(start: &Path) -> Result<PathBuf> {
     let mut cur = start
@@ -100,4 +124,34 @@ pub fn discover_kit(start: &Path) -> Result<PathBuf> {
         KIT_DIR,
         KIT_DIR_LEGACY
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::fs;
+
+    #[test]
+    fn remove_legacy_host_kit_drops_duplicate() {
+        let root = tempfile::tempdir().unwrap();
+        let modern = root.path().join(KIT_DIR);
+        let legacy = root.path().join(KIT_DIR_LEGACY);
+        for k in [&modern, &legacy] {
+            fs::create_dir_all(k.join("core")).unwrap();
+            fs::write(k.join("core/BRAINFORGE.md"), "x").unwrap();
+        }
+        assert!(remove_legacy_host_kit(root.path()).unwrap());
+        assert!(!legacy.exists());
+        assert!(modern.is_dir());
+    }
+
+    #[test]
+    fn remove_legacy_host_kit_noop_without_modern() {
+        let root = tempfile::tempdir().unwrap();
+        let legacy = root.path().join(KIT_DIR_LEGACY);
+        fs::create_dir_all(legacy.join("core")).unwrap();
+        fs::write(legacy.join("core/BRAINFORGE.md"), "x").unwrap();
+        assert!(!remove_legacy_host_kit(root.path()).unwrap());
+        assert!(legacy.is_dir());
+    }
 }

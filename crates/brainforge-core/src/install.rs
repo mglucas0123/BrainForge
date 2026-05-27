@@ -6,7 +6,7 @@ use anyhow::{Context, Result, bail};
 use crate::adapter::Adapter;
 use crate::config::{self, write_default_config_if_missing};
 use crate::copy_util::{copy_file, copy_tree, ensure_dir};
-use crate::kit::{KitPaths, KIT_DIR};
+use crate::kit::{KitPaths, KIT_DIR, remove_legacy_host_kit};
 use crate::sync::run_sync;
 
 const MEMORY_FILES: [&str; 2] = [".context.md", ".user.md"];
@@ -56,6 +56,7 @@ pub fn run_install(
 
     copy_kit_tree(&source_kit, &dest_kit, opts.force)?;
     patch_host_kit_paths(&dest_kit)?;
+    let _ = remove_legacy_host_kit(&target_project)?;
     let kit_copied = true;
 
     let exe_copied = if opts.copy_exe {

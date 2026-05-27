@@ -100,6 +100,21 @@ function Get-HostKitPath {
     return $null
 }
 
+function Remove-LegacyHostKitFolder {
+    param([string]$ProjectRoot)
+    $modern = Join-Path $ProjectRoot '.brainforge'
+    $legacy = Join-Path $ProjectRoot 'brainforge'
+    if (-not (Test-KitLayout $modern)) { return }
+    if (-not (Test-KitLayout $legacy)) { return }
+    try {
+        $m = (Resolve-Path -LiteralPath $modern).Path
+        $l = (Resolve-Path -LiteralPath $legacy).Path
+        if ($m -eq $l) { return }
+    } catch { }
+    Write-Info "Removendo pasta legada brainforge/ (canônico: .brainforge/)."
+    Remove-Item -LiteralPath $legacy -Recurse -Force
+}
+
 function Find-KitFolder {
     param([string]$SearchRoot)
     Get-ChildItem -Path $SearchRoot -Recurse -Directory -ErrorAction SilentlyContinue |
@@ -365,6 +380,8 @@ Write-Host ""
 
 & $exePath @initArgs
 $code = $LASTEXITCODE
+
+Remove-LegacyHostKitFolder -ProjectRoot $ProjectRoot
 
 foreach ($dir in $script:CleanupDirs) {
     if (Test-Path -LiteralPath $dir) {

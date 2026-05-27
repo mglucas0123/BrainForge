@@ -134,6 +134,9 @@ pub fn write_default_config_if_missing(project_root: &Path) -> Result<bool> {
 pub fn write_config_install(project_root: &Path, adapters: &[Adapter]) -> Result<bool> {
     let path = project_root.join("brainforge.toml");
     let mut cfg = load_config(project_root);
+    if cfg.brainforge.memory_dir == "brainforge/memory" {
+        cfg.brainforge.memory_dir = expected_memory_dir().into();
+    }
     cfg.install.cursor = adapters.contains(&Adapter::Cursor);
     cfg.install.copilot = adapters.contains(&Adapter::Copilot);
     cfg.install.antigravity = adapters.contains(&Adapter::Antigravity);

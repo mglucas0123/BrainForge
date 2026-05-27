@@ -14,8 +14,6 @@ permissions:
   contents: read
   pages: write
   id-token: write
-  # Required when enablement: true (first-time Pages setup)
-  administration: write
 
 concurrency:
   group: pages
@@ -34,14 +32,17 @@ jobs:
         run: |
           mkdir -p docs
           cp bf.ps1 docs/bf.ps1
+          # Avoid Jekyll processing
+          touch docs/.nojekyll
 
-      - uses: actions/configure-pages@v5
-        with:
-          enablement: true
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
 
-      - uses: actions/upload-pages-artifact@v3
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
         with:
           path: docs
 
-      - uses: actions/deploy-pages@v4
+      - name: Deploy to GitHub Pages
         id: deployment
+        uses: actions/deploy-pages@v4

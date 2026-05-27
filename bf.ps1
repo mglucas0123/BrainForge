@@ -43,18 +43,56 @@ function Write-Warn([string]$Message) {
     Write-Host "[brainforge] $Message" -ForegroundColor Yellow
 }
 
-function Get-LatestReleaseTag {
-    param([string]$Repository)
+function Get-DirectReleaseAssetUrl {
+    param(
+        [string]$Repository,
+        [string]$Tag,
+        [string]$AssetName
+    )
+    return "https://github.com/$Repository/releases/download/$Tag/$AssetName"
+}
+
+function Test-ReleaseAssetExists {
+    param([string]$Url)
+    try {
+        Invoke-WebRequest -Uri $Url -Method Head -UseBasicParsing | Out-Null
+        return $true
+    } catch {
+        return $false
+    }
+}
+
+function Resolve-ReleaseTag {
+    param(
+        [string]$Repository,
+        [string]$Version
+    )
+
+    if ($Version -ne "latest") {
+        return if ($Version.StartsWith("v")) { $Version } else { "v$Version" }
+    }
 
     try {
         $release = Invoke-RestMethod `
             -Uri "https://api.github.com/repos/$Repository/releases/latest" `
             -Headers @{ "User-Agent" = "brainforge-install" }
-        return $release.tag_name
+        if ($release.tag_name) {
+            return $release.tag_name
+        }
     } catch {
-        Write-Warn "Release nao encontrada ($Repository). Usando branch '$Branch' para o kit."
-        return $null
+        Write-Warn "API GitHub indisponivel (rate limit?). Tentando releases diretas..."
     }
+
+    foreach ($candidate in @("v1.0.1", "v1.0.0")) {
+        $probe = Get-DirectReleaseAssetUrl -Repository $Repository -Tag $candidate -AssetName "brainforge.exe"
+        if (Test-ReleaseAssetExists -Url $probe) {
+            Write-Info "Release detectada: $candidate"
+            return $candidate
+        }
+    }
+
+    Write-Warn "Nenhuma release com brainforge.exe; usando branch '$Branch' para o kit."
+    return $null
 }
 
 function Get-ReleaseAssetUrl {
@@ -64,15 +102,24 @@ function Get-ReleaseAssetUrl {
         [string]$AssetName
     )
 
-    $release = Invoke-RestMethod `
-        -Uri "https://api.github.com/repos/$Repository/releases/tags/$Tag" `
-        -Headers @{ "User-Agent" = "brainforge-install" }
+    try {
+        $release = Invoke-RestMethod `
+            -Uri "https://api.github.com/repos/$Repository/releases/tags/$Tag" `
+            -Headers @{ "User-Agent" = "brainforge-install" }
 
-    $asset = $release.assets | Where-Object { $_.name -eq $AssetName } | Select-Object -First 1
-    if (-not $asset) {
-        return $null
+        $asset = $release.assets | Where-Object { $_.name -eq $AssetName } | Select-Object -First 1
+        if ($asset) {
+            return $asset.browser_download_url
+        }
+    } catch {
+        Write-Warn "API assets falhou para $Tag; URL direta."
     }
-    return $asset.browser_download_url
+
+    $direct = Get-DirectReleaseAssetUrl -Repository $Repository -Tag $Tag -AssetName $AssetName
+    if (Test-ReleaseAssetExists -Url $direct) {
+        return $direct
+    }
+    return $null
 }
 
 function Save-HttpFile {
@@ -290,7 +337,7 @@ function Install-Executable {
 $ProjectRoot = (Get-Location).Path
 Write-Info "Projeto: $ProjectRoot"
 
-$tag = if ($Version -eq "latest") { Get-LatestReleaseTag -Repository $Repo } else { if ($Version.StartsWith("v")) { $Version } else { "v$Version" } }
+$tag = Resolve-ReleaseTag -Repository $Repo -Version $Version
 $kitRef = if ($tag) { $tag } else { $Branch }
 
 $kitPath = Join-Path $ProjectRoot ".brainforge"
@@ -332,14 +379,16 @@ if ($needExe) {
     if ($tag) {
         Install-Executable -Repository $Repo -Tag $tag -ProjectRoot $ProjectRoot
         Write-Info "CLI instalado (release $tag)."
-        $devExe = Find-DevExecutable -StartDir $ProjectRoot
-        if ($devExe) {
-            Copy-Item -LiteralPath $devExe -Destination $exePath -Force
-            Unblock-File -LiteralPath $exePath -ErrorAction SilentlyContinue
-            Write-Info "CLI substituido por build local (mais recente): $devExe"
+        if ($env:BRAINFORGE_USE_DEV_EXE -eq "1") {
+            $devExe = Find-DevExecutable -StartDir $ProjectRoot
+            if ($devExe) {
+                Copy-Item -LiteralPath $devExe -Destination $exePath -Force
+                Unblock-File -LiteralPath $exePath -ErrorAction SilentlyContinue
+                Write-Info "CLI substituido por build local: $devExe"
+            }
         }
     } else {
-        $devExe = Find-DevExecutable -StartDir $ProjectRoot
+        $devExe = if ($env:BRAINFORGE_USE_DEV_EXE -eq "1") { Find-DevExecutable -StartDir $ProjectRoot } else { $null }
         if ($devExe) {
             Copy-Item -LiteralPath $devExe -Destination $exePath -Force
             Unblock-File -LiteralPath $exePath -ErrorAction SilentlyContinue

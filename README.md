@@ -11,7 +11,7 @@ Kit for your AI assistant: project memory, concise mode, and skills. **Cursor**,
 Run in **your project folder**:
 
 ```powershell
-irm https://mglucas0123.github.io/BrainForge/bf.ps1 | iex
+iex (irm https://mglucas0123.github.io/BrainForge/bf.ps1 -UseBasicParsing)
 ```
 
 Downloads from GitHub release **v1.0.0**, then opens the IDE menu (`brainforge init`).
@@ -19,13 +19,13 @@ Downloads from GitHub release **v1.0.0**, then opens the IDE menu (`brainforge i
 **All IDEs, no menu:**
 
 ```powershell
-$env:BRAINFORGE_NO_MENU = "1"; irm https://mglucas0123.github.io/BrainForge/bf.ps1 | iex
+$env:BRAINFORGE_NO_MENU = "1"; iex (irm https://mglucas0123.github.io/BrainForge/bf.ps1 -UseBasicParsing)
 ```
 
 **Alternate URL** (if Pages is slow):
 
 ```powershell
-irm https://raw.githubusercontent.com/mglucas0123/BrainForge/v1.0.0/bf.ps1 | iex
+iex (irm https://raw.githubusercontent.com/mglucas0123/BrainForge/v1.0.0/bf.ps1 -UseBasicParsing)
 ```
 
 ---

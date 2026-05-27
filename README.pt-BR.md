@@ -11,7 +11,7 @@ Kit para o assistente de IA: memória do projeto, modo direto e skills. **Cursor
 Na **pasta do seu projeto**:
 
 ```powershell
-irm https://mglucas0123.github.io/BrainForge/bf.ps1 | iex
+iex (irm https://mglucas0123.github.io/BrainForge/bf.ps1 -UseBasicParsing)
 ```
 
 Baixa a release **v1.0.0** e abre o menu de IDE (`brainforge init`).
@@ -19,13 +19,13 @@ Baixa a release **v1.0.0** e abre o menu de IDE (`brainforge init`).
 **Todas as IDEs, sem menu:**
 
 ```powershell
-$env:BRAINFORGE_NO_MENU = "1"; irm https://mglucas0123.github.io/BrainForge/bf.ps1 | iex
+$env:BRAINFORGE_NO_MENU = "1"; iex (irm https://mglucas0123.github.io/BrainForge/bf.ps1 -UseBasicParsing)
 ```
 
 **URL alternativa:**
 
 ```powershell
-irm https://raw.githubusercontent.com/mglucas0123/BrainForge/v1.0.0/bf.ps1 | iex
+iex (irm https://raw.githubusercontent.com/mglucas0123/BrainForge/v1.0.0/bf.ps1 -UseBasicParsing)
 ```
 
 ---

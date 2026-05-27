@@ -5,7 +5,7 @@
 
 .EXAMPLE
   # Short URL (run inside your project folder):
-  irm https://mglucas0123.github.io/BrainForge/bf.ps1 | iex
+  iex (irm https://mglucas0123.github.io/BrainForge/bf.ps1 -UseBasicParsing)
 
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File .\bf.ps1
@@ -17,7 +17,6 @@ param(
     [string]$Repo = "mglucas0123/BrainForge",
     [switch]$Force,
     [switch]$NoMenu,
-    [ValidateSet('cursor', 'copilot', 'antigravity', 'all')]
     [string]$Adapter,
     [switch]$SkipInit
 )
@@ -29,6 +28,12 @@ if ($env:BRAINFORGE_VERSION) { $Version = $env:BRAINFORGE_VERSION }
 if ($env:BRAINFORGE_BRANCH) { $Branch = $env:BRAINFORGE_BRANCH }
 if ($env:BRAINFORGE_NO_MENU -eq "1") { $NoMenu = $true }
 if ($env:BRAINFORGE_ADAPTER) { $Adapter = $env:BRAINFORGE_ADAPTER }
+
+if ([string]::IsNullOrWhiteSpace($Adapter)) {
+    $Adapter = $null
+} elseif ($Adapter -notin @('cursor', 'copilot', 'antigravity', 'all')) {
+    throw "Adapter invalido: '$Adapter'. Use: cursor, copilot, antigravity ou all."
+}
 
 function Write-Info([string]$Message) {
     Write-Host "[brainforge] $Message" -ForegroundColor Cyan

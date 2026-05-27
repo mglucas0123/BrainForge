@@ -8,7 +8,7 @@ Distribuição via **`brainforge install`** — não precisa clonar o repo Brain
 
 ```powershell
 cd C:\meu-projeto
-irm https://mglucas0123.github.io/BrainForge/bf.ps1 | iex
+iex (irm https://mglucas0123.github.io/BrainForge/bf.ps1 -UseBasicParsing)
 ```
 
 Ou, a partir deste repo já compilado:

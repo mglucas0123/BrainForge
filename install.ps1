@@ -8,10 +8,10 @@ $urls = @(
 foreach ($u in $urls) {
     try {
         $script = (Invoke-WebRequest -Uri $u -UseBasicParsing).Content
-        Invoke-Expression $script
+        Invoke-Expression -Command $script
         exit $LASTEXITCODE
     } catch {
         Write-Warning "Falha em $u : $_"
     }
 }
-throw "Nao foi possivel baixar bf.ps1. Use: irm https://mglucas0123.github.io/BrainForge/bf.ps1 | iex"
+throw "Nao foi possivel baixar bf.ps1. Use: iex (irm https://mglucas0123.github.io/BrainForge/bf.ps1 -UseBasicParsing)"

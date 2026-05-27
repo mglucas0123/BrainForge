@@ -89,6 +89,27 @@ function Test-KitLayout {
     Test-Path (Join-Path $KitRoot "core\BRAINFORGE.md")
 }
 
+function Find-KitFolder {
+    param([string]$SearchRoot)
+    Get-ChildItem -Path $SearchRoot -Recurse -Directory -ErrorAction SilentlyContinue |
+        Where-Object {
+            ($_.Name -eq '.brainforge' -or $_.Name -eq 'brainforge') -and (Test-KitLayout $_.FullName)
+        } |
+        Select-Object -First 1
+}
+
+function Install-KitToHost {
+    param(
+        [string]$KitSrcPath,
+        [string]$ProjectRoot
+    )
+    $dest = Join-Path $ProjectRoot ".brainforge"
+    $legacy = Join-Path $ProjectRoot "brainforge"
+    if (Test-Path $dest) { Remove-Item -LiteralPath $dest -Recurse -Force }
+    if (Test-Path $legacy) { Remove-Item -LiteralPath $legacy -Recurse -Force }
+    Copy-Item -LiteralPath $KitSrcPath -Destination $dest -Recurse -Force
+}
+
 function Install-KitFromZip {
     param(
         [string]$ZipPath,
@@ -101,19 +122,13 @@ function Install-KitFromZip {
     try {
         Expand-Archive -Path $ZipPath -DestinationPath $extractDir -Force
 
-        $kitSrc = Get-ChildItem -Path $extractDir -Recurse -Directory -Filter "brainforge" |
-            Where-Object { Test-KitLayout $_.FullName } |
-            Select-Object -First 1
+        $kitSrc = Find-KitFolder -SearchRoot $extractDir
 
         if (-not $kitSrc) {
-            throw "brainforge/ nao encontrado dentro do zip."
+            throw ".brainforge/ nao encontrado dentro do zip."
         }
 
-        $dest = Join-Path $ProjectRoot "brainforge"
-        if (Test-Path $dest) {
-            Remove-Item -LiteralPath $dest -Recurse -Force
-        }
-        Copy-Item -LiteralPath $kitSrc.FullName -Destination $dest -Recurse -Force
+        Install-KitToHost -KitSrcPath $kitSrc.FullName -ProjectRoot $ProjectRoot
     } finally {
         if (Test-Path $extractDir) {
             Remove-Item -LiteralPath $extractDir -Recurse -Force -ErrorAction SilentlyContinue
@@ -193,19 +208,13 @@ function Install-KitFromRepoArchive {
         New-Item -ItemType Directory -Path $extractDir -Force | Out-Null
         Expand-Archive -Path $zipPath -DestinationPath $extractDir -Force
 
-        $kitSrc = Get-ChildItem -Path $extractDir -Recurse -Directory -Filter "brainforge" |
-            Where-Object { Test-KitLayout $_.FullName } |
-            Select-Object -First 1
+        $kitSrc = Find-KitFolder -SearchRoot $extractDir
 
         if (-not $kitSrc) {
-            throw "Pasta brainforge/ nao encontrada no arquivo do GitHub."
+            throw "Pasta .brainforge/ nao encontrada no arquivo do GitHub."
         }
 
-        $dest = Join-Path $ProjectRoot "brainforge"
-        if (Test-Path $dest) {
-            Remove-Item -LiteralPath $dest -Recurse -Force
-        }
-        Copy-Item -LiteralPath $kitSrc.FullName -Destination $dest -Recurse -Force
+        Install-KitToHost -KitSrcPath $kitSrc.FullName -ProjectRoot $ProjectRoot
 
         $script:CleanupDirs.Add($extractDir) | Out-Null
         return $kitSrc.Parent.FullName
@@ -258,7 +267,7 @@ Write-Info "Projeto: $ProjectRoot"
 $tag = if ($Version -eq "latest") { Get-LatestReleaseTag -Repository $Repo } else { if ($Version.StartsWith("v")) { $Version } else { "v$Version" } }
 $kitRef = if ($tag) { $tag } else { $Branch }
 
-$kitPath = Join-Path $ProjectRoot "brainforge"
+$kitPath = Join-Path $ProjectRoot ".brainforge"
 $needKit = $Force -or -not (Test-KitLayout $kitPath)
 $archiveRepoRoot = $null
 
@@ -287,7 +296,7 @@ if ($needKit) {
         Write-Info "Kit instalado (GitHub archive)."
     }
 } else {
-    Write-Info "Kit ja existe em brainforge/ (use -Force para substituir)."
+    Write-Info "Kit ja existe em .brainforge/ (use -Force para substituir)."
 }
 
 $exePath = Join-Path $ProjectRoot "brainforge.exe"

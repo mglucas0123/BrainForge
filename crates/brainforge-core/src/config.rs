@@ -11,7 +11,7 @@ pub const DEFAULT_CONFIG_TEMPLATE: &str = r#"# BrainForge host config
 
 [brainforge]
 version = "1"
-memory_dir = "brainforge/memory"
+memory_dir = ".brainforge/memory"
 caveman_level = "full"   # lite | full | ultra
 language = "pt-BR"
 
@@ -45,7 +45,7 @@ impl Default for BrainforgeMeta {
     fn default() -> Self {
         Self {
             version: "1".into(),
-            memory_dir: "brainforge/memory".into(),
+            memory_dir: ".brainforge/memory".into(),
             caveman_level: "full".into(),
             language: "pt-BR".into(),
         }
@@ -180,7 +180,7 @@ enabled = {mcp_enabled}
 
 /// Expected canonical memory directory relative to project root.
 pub fn expected_memory_dir() -> &'static str {
-    "brainforge/memory"
+    ".brainforge/memory"
 }
 
 #[cfg(test)]

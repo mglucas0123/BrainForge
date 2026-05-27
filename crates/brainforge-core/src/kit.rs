@@ -3,11 +3,16 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Context, Result, bail};
 
+/// Host kit folder (hidden, canonical edit location).
+pub const KIT_DIR: &str = ".brainforge";
+/// Legacy kit folder name (BrainForge dev repo + old hosts).
+pub const KIT_DIR_LEGACY: &str = "brainforge";
+
 /// Resolved layout under the repo / host project.
 pub struct KitPaths {
     /// Project root (where .cursor / .github are written).
     pub project_root: PathBuf,
-    /// `brainforge/` kit directory (core, memory, adapters, tools).
+    /// `.brainforge/` or legacy `brainforge/` kit directory.
     pub kit_root: PathBuf,
 }
 
@@ -64,20 +69,24 @@ pub fn validate_kit(kit_root: &Path) -> Result<()> {
     Ok(())
 }
 
-/// Walk parents from `start` looking for `brainforge/` (or `start` if it is the kit root).
+fn is_kit_root(path: &Path) -> bool {
+    path.join("core").join("BRAINFORGE.md").is_file()
+}
+
+/// Walk parents from `start` looking for `.brainforge/` then legacy `brainforge/`.
 pub fn discover_kit(start: &Path) -> Result<PathBuf> {
     let mut cur = start
         .canonicalize()
         .with_context(|| format!("canonicalize {}", start.display()))?;
 
     loop {
-        let nested = cur.join("brainforge");
-        if nested.join("core").join("BRAINFORGE.md").is_file() {
-            return Ok(nested);
+        for name in [KIT_DIR, KIT_DIR_LEGACY] {
+            let nested = cur.join(name);
+            if is_kit_root(&nested) {
+                return Ok(nested);
+            }
         }
-        if cur.file_name().is_some_and(|n| n == "brainforge")
-            && cur.join("core").join("BRAINFORGE.md").is_file()
-        {
+        if is_kit_root(&cur) {
             return Ok(cur);
         }
         if !cur.pop() {
@@ -86,7 +95,9 @@ pub fn discover_kit(start: &Path) -> Result<PathBuf> {
     }
 
     bail!(
-        "brainforge kit not found from {}. Set BRAINFORGE_KIT or use --kit <path>",
-        start.display()
+        "kit not found from {} (expected {}/ or {}/). Set BRAINFORGE_KIT or --kit",
+        start.display(),
+        KIT_DIR,
+        KIT_DIR_LEGACY
     )
 }

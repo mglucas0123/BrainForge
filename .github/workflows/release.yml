@@ -35,7 +35,9 @@ jobs:
       - name: Pack kit zip
         shell: pwsh
         run: |
-          Compress-Archive -Path brainforge -DestinationPath brainforge-kit.zip -Force
+          if (Test-Path .brainforge) { Remove-Item .brainforge -Recurse -Force }
+          Copy-Item -Path brainforge -Destination .brainforge -Recurse -Force
+          Compress-Archive -Path .brainforge -DestinationPath brainforge-kit.zip -Force
           Get-Item brainforge-kit.zip | Format-List Name, Length
 
       - name: Upload release assets

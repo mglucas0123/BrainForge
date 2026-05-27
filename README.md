@@ -46,7 +46,7 @@ Off: `modo normal` or `stop brainforge`.
 .\brainforge.exe sync
 ```
 
-Memory: `brainforge/memory/` only.
+Memory: `.brainforge/memory/` only (`.cursor/` is a generated mirror).
 
 ---
 

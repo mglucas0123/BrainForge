@@ -2,7 +2,7 @@
 
 [brainforge]
 version = "1"
-memory_dir = "brainforge/memory"
+memory_dir = ".brainforge/memory"
 caveman_level = "full"   # lite | full | ultra
 language = "pt-BR"
 

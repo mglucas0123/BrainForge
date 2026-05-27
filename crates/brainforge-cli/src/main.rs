@@ -455,7 +455,7 @@ fn cmd_init(
         );
         run_uninstall(&project, &adapters)?;
         println!();
-        println!("{}", style("Removido. O kit brainforge/ não foi apagado.").dim());
+        println!("{}", style("Removido. O kit .brainforge/ não foi apagado.").dim());
         return Ok(());
     }
 
@@ -496,7 +496,7 @@ fn cmd_init(
     )?;
 
     if report.kit_installed {
-        println!("{} brainforge/", style("OK").green());
+        println!("{} .brainforge/", style("OK").green());
     }
     if report.exe_copied {
         println!("{} brainforge.exe", style("OK").green());
@@ -529,11 +529,15 @@ fn cmd_init(
 
 fn print_init_next_steps(project: &std::path::Path, adapters: &[Adapter]) {
     println!("{}", style("Próximos passos:").cyan().bold());
+    println!(
+        "  {}",
+        style("Edite só .brainforge/ — .cursor/ e .agents/ são espelhos gerados pela IDE.").dim()
+    );
     if adapters.contains(&Adapter::Cursor) || adapters.contains(&Adapter::Antigravity) {
         println!("  1. Abra o projeto no Cursor e digite: {}", style("/brainforge").green());
     }
     if adapters.contains(&Adapter::Copilot) {
-        println!("  2. Copilot: use “BrainForge on” ou leia brainforge/core/BRAINFORGE.md");
+        println!("  2. Copilot: use “BrainForge on” ou leia .brainforge/core/BRAINFORGE.md");
     }
     println!(
         "  · Verificar de novo: {}",
@@ -602,7 +606,7 @@ fn cmd_install(
     )?;
 
     if report.kit_copied {
-        println!("{} brainforge/", style("OK").green());
+        println!("{} .brainforge/", style("OK").green());
     }
     if report.exe_copied {
         println!("{} brainforge.exe", style("OK").green());

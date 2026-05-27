@@ -16,14 +16,16 @@ pub use adapter::Adapter;
 pub use config::{BrainforgeConfig, load_config};
 pub use doctor::{DoctorReport, DoctorStatus, run_doctor};
 pub use embedded::{embedded_command_count, write_embedded_commands};
-pub use init::{InitOptions, InitReport, discover_source_kit, run_init, run_uninstall};
+pub use init::{
+    InitOptions, InitReport, discover_source_kit, run_init, run_uninstall, write_host_gitignore,
+};
+pub use kit::{KIT_DIR, KIT_DIR_LEGACY, KitPaths};
 pub use install::{InstallOptions, InstallReport, format_mcp_config_json, run_install};
 pub use recall::{
     TranscriptSession, cursor_project_slug, discover_transcripts_dir, extract_text_lines,
     list_sessions, search_transcripts,
 };
 pub use security::{SecretFinding, scan_entries, scan_secrets};
-pub use kit::KitPaths;
 pub use memory::{
     CompressResult, MemoryAuditReport, MemoryFile, MemoryStats, MemoryTarget, WriteSkipReason,
     audit_memory, compress_memory, read_memory, refresh_memory, sync_memory_to_cursor,

@@ -35,11 +35,11 @@ pub fn run_doctor(paths: &KitPaths) -> Result<DoctorReport, anyhow::Error> {
     let mut checks = vec![
         check_rtk(paths),
         check_memory(
-            "brainforge/memory/.context.md",
+            ".brainforge/memory/.context.md",
             &paths.memory().join(".context.md"),
         ),
         check_memory(
-            "brainforge/memory/.user.md",
+            ".brainforge/memory/.user.md",
             &paths.memory().join(".user.md"),
         ),
         check_mirror_memory(
@@ -135,7 +135,7 @@ fn check_mirror_memory(name: &str, mirror: &Path, canonical: &Path) -> DoctorChe
         detail: if same {
             "in sync with canonical".into()
         } else {
-            "drift from brainforge/memory — re-sync".into()
+            "drift from .brainforge/memory — re-sync".into()
         },
     }
 }

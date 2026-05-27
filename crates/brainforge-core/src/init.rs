@@ -8,7 +8,7 @@ use crate::config::write_config_install;
 use crate::copy_util;
 use crate::doctor::{self, DoctorReport};
 use crate::install::{InstallOptions, run_install};
-use crate::kit::{KitPaths, discover_kit, validate_kit};
+use crate::kit::{KitPaths, KIT_DIR, discover_kit, validate_kit};
 use crate::sync::run_sync;
 
 #[derive(Debug, Clone, Default)]
@@ -43,10 +43,7 @@ pub fn run_init(
         .canonicalize()
         .with_context(|| format!("target project {}", target_project.display()))?;
 
-    let kit_marker = target_project
-        .join("brainforge")
-        .join("core")
-        .join("BRAINFORGE.md");
+    let kit_marker = target_project.join(KIT_DIR).join("core").join("BRAINFORGE.md");
     let needs_kit = !kit_marker.is_file();
 
     let mut kit_installed = false;
@@ -85,6 +82,7 @@ pub fn run_init(
 
     let paths = KitPaths::resolve(&target_project, None)?;
     run_sync(&paths, adapters, opts.embed_commands)?;
+    write_host_gitignore(&target_project, adapters)?;
 
     let doctor = doctor::run_doctor(&paths)?;
 
@@ -179,6 +177,47 @@ fn prune_empty_dir(path: &Path) -> Result<()> {
     Ok(())
 }
 
+/// Append BrainForge-generated paths to host `.gitignore` (idempotent block).
+pub fn write_host_gitignore(project_root: &Path, adapters: &[Adapter]) -> Result<()> {
+    use std::fs::OpenOptions;
+    use std::io::Write;
+
+    let mut lines = vec![
+        String::new(),
+        "# BrainForge (generated — edit .brainforge/ only)".to_string(),
+    ];
+    if adapters.iter().any(|a| matches!(a, Adapter::Cursor)) {
+        lines.push(".cursor/".into());
+    }
+    if adapters.iter().any(|a| matches!(a, Adapter::Copilot)) {
+        lines.push(".github/copilot-instructions.md".into());
+    }
+    if adapters.iter().any(|a| matches!(a, Adapter::Antigravity)) {
+        lines.push(".agents/".into());
+    }
+
+    let path = project_root.join(".gitignore");
+    let existing = if path.is_file() {
+        fs::read_to_string(&path).unwrap_or_default()
+    } else {
+        String::new()
+    };
+
+    if existing.contains("# BrainForge (generated") {
+        return Ok(());
+    }
+
+    let mut file = if path.is_file() {
+        OpenOptions::new().append(true).open(&path)?
+    } else {
+        fs::File::create(&path)?
+    };
+    for line in lines {
+        writeln!(file, "{line}")?;
+    }
+    Ok(())
+}
+
 /// Locate kit source for `install` / `init` (exe parents, cwd, env, --kit).
 pub fn discover_source_kit(kit_override: Option<&Path>) -> Result<PathBuf> {
     if let Some(k) = kit_override {
@@ -214,8 +253,8 @@ pub fn discover_source_kit(kit_override: Option<&Path>) -> Result<PathBuf> {
     }
 
     bail!(
-        "fonte do kit não encontrada. Defina BRAINFORGE_KIT, use --kit <caminho>/brainforge, \
-         ou rode a partir do repositório BrainForge / pasta com brainforge/"
+        "fonte do kit não encontrada. Defina BRAINFORGE_KIT, use --kit <caminho>/.brainforge, \
+         ou rode a partir do repositório BrainForge"
     );
 }
 

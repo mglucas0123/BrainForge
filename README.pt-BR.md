@@ -46,7 +46,7 @@ Desligar: `modo normal` ou `stop brainforge`.
 .\brainforge.exe sync
 ```
 
-Memória: só em `brainforge/memory/`.
+Memória: só em `.brainforge/memory/` (`.cursor/` é espelho gerado).
 
 ---
 

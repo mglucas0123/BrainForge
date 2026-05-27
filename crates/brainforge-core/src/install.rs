@@ -6,7 +6,7 @@ use anyhow::{Context, Result, bail};
 use crate::adapter::Adapter;
 use crate::config::{self, write_default_config_if_missing};
 use crate::copy_util::{copy_file, copy_tree, ensure_dir};
-use crate::kit::KitPaths;
+use crate::kit::{KitPaths, KIT_DIR};
 use crate::sync::run_sync;
 
 const MEMORY_FILES: [&str; 2] = [".context.md", ".user.md"];
@@ -27,7 +27,7 @@ pub struct InstallReport {
     pub adapters_synced: Vec<Adapter>,
 }
 
-/// Copy kit from `source_kit` into `<target_project>/brainforge/`, optional exe + config + sync.
+/// Copy kit from `source_kit` into `<target_project>/.brainforge/`, optional exe + config + sync.
 pub fn run_install(
     source_kit: &Path,
     target_project: &Path,
@@ -41,7 +41,7 @@ pub fn run_install(
         .canonicalize()
         .with_context(|| format!("source kit {}", source_kit.display()))?;
 
-    let dest_kit = target_project.join("brainforge");
+    let dest_kit = target_project.join(KIT_DIR);
     if dest_kit.exists() {
         if opts.force {
             fs::remove_dir_all(&dest_kit)
@@ -55,6 +55,7 @@ pub fn run_install(
     }
 
     copy_kit_tree(&source_kit, &dest_kit, opts.force)?;
+    patch_host_kit_paths(&dest_kit)?;
     let kit_copied = true;
 
     let exe_copied = if opts.copy_exe {
@@ -147,6 +148,43 @@ fn copy_memory_dir(src: &Path, dst: &Path, force: bool) -> Result<()> {
 
 fn should_copy_file(dest: &Path, force: bool) -> bool {
     force || !dest.is_file()
+}
+
+/// Rewrite legacy `brainforge/...` path strings in copied kit docs for the host layout.
+fn patch_host_kit_paths(kit_root: &Path) -> Result<()> {
+    use std::ffi::OsStr;
+    use walkdir::WalkDir;
+
+    let replacements = [
+        ("brainforge/memory", ".brainforge/memory"),
+        ("brainforge/core", ".brainforge/core"),
+        ("brainforge/tools", ".brainforge/tools"),
+        ("brainforge/adapters", ".brainforge/adapters"),
+    ];
+
+    for entry in WalkDir::new(kit_root)
+        .into_iter()
+        .filter_map(|e| e.ok())
+        .filter(|e| e.file_type().is_file())
+    {
+        let path = entry.path();
+        let ext = path.extension().and_then(OsStr::to_str).unwrap_or("");
+        if !matches!(ext, "md" | "mdc" | "toml" | "json" | "ps1" | "txt") {
+            continue;
+        }
+        let Ok(mut text) = fs::read_to_string(path) else {
+            continue;
+        };
+        let original = text.clone();
+        for (from, to) in replacements {
+            text = text.replace(from, to);
+        }
+        if text != original {
+            fs::write(path, text)
+                .with_context(|| format!("patch paths in {}", path.display()))?;
+        }
+    }
+    Ok(())
 }
 
 fn copy_install_exe(exe_source: Option<&Path>, target_project: &Path) -> Result<bool> {

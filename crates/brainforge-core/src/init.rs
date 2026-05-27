@@ -129,10 +129,15 @@ fn uninstall_cursor(root: &Path) -> Result<()> {
     ] {
         remove_path(&cursor.join(rel))?;
     }
-    for name in ["skills-catalog.json", "installed-skills.json"] {
+    for name in [
+        "skills-catalog.json",
+        "installed-skills.json",
+        "README.md",
+        ".brainforge-generated",
+    ] {
         remove_path(&cursor.join(name))?;
     }
-    println!("[cursor] outputs removidos de .cursor/");
+    println!("[cursor] bridge removido de .cursor/");
     Ok(())
 }
 

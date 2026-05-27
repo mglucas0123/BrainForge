@@ -11,6 +11,7 @@ mod kit;
 pub mod memory;
 mod skill;
 mod sync;
+mod sync_mode;
 
 pub use adapter::Adapter;
 pub use config::{BrainforgeConfig, load_config};
@@ -35,4 +36,5 @@ pub use skill::{
     list_optional_ids, load_catalog,
 };
 pub use sync::run_sync;
+pub use sync_mode::SyncMode;
 

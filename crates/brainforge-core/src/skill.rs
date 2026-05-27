@@ -77,18 +77,11 @@ pub struct SkillInstallReport {
 }
 
 pub fn catalog_path(paths: &KitPaths) -> PathBuf {
-    let project = paths.project_root.join(".cursor").join("skills-catalog.json");
-    if project.is_file() {
-        return project;
-    }
     paths.core().join("skills-catalog.json")
 }
 
 pub fn installed_path(paths: &KitPaths) -> PathBuf {
-    paths
-        .project_root
-        .join(".cursor")
-        .join("installed-skills.json")
+    paths.core().join("installed-skills.json")
 }
 
 pub fn load_catalog(paths: &KitPaths) -> Result<SkillsCatalog> {
@@ -159,11 +152,10 @@ pub fn install_optional_skill(
             )
         })?;
 
-    let cursor = paths.project_root.join(".cursor");
-    let source = cursor.join(&entry.source_path);
+    let source = paths.core().join(&entry.source_path);
     if !source.is_dir() {
         bail!(
-            "optional source missing at {} — run `brainforge sync` first",
+            "optional source missing at {} — kit incomplete?",
             source.display()
         );
     }
@@ -173,6 +165,7 @@ pub fn install_optional_skill(
         bail!("missing SKILL.md in {}", source.display());
     }
 
+    let cursor = paths.project_root.join(".cursor");
     let target = cursor.join("skills").join(&entry.id);
     if target.exists() {
         if !force {

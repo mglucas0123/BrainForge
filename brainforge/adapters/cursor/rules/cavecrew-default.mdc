@@ -13,36 +13,35 @@ alwaysApply: true
 
 ## Always On
 
-- Concise, direct communication (`brainforge/core/skills/caveman`).
+- Concise, direct communication (`.brainforge/core/skills/caveman`).
 - Prioritize commands, code, and concrete actions.
-- Local RTK: `brainforge/tools/rtk/rtk.exe` only; explicit RTK on large shell output (Windows).
+- Local RTK: `.brainforge/tools/rtk/rtk.exe` only; explicit RTK on large shell output (Windows).
 
 ## Output Contract (Caveman)
 
 - Persistence: concise every response; no verbose drift.
 - Auto-Clarity: full prose for security, irreversible actions, ambiguity, clarifications — then resume concise.
 - Disable: "modo normal", "stop caveman", "stop brainforge", "para brainforge".
-- Detail: `brainforge/core/caveman.md` · skill `brainforge/core/skills/caveman/SKILL.md`.
+- Detail: `.brainforge/core/caveman.md` · skill `.brainforge/core/skills/caveman/SKILL.md`.
 
 ## Memory Discipline (Cavemem)
 
-- Read **`brainforge/memory/.context.md`** and **`brainforge/memory/.user.md`** at task start (mirrored `.cursor/project/` after sync).
-- Format: `§` + `**Capacity:**` — `brainforge/core/docs/MEMORY-FORMAT.md`.
+- Read **`.brainforge/memory/.context.md`** and **`.brainforge/memory/.user.md`** at task start (`.cursor/project/` links here after sync).
+- Format: `§` + `**Capacity:**` — `.brainforge/core/docs/MEMORY-FORMAT.md`.
 - Auto-compress over threshold; skill `compress-context` or `/compress-context`. Opt-out: `sem auto-compress`.
-- Detail: `brainforge/core/cavemem.md`.
+- Detail: `.brainforge/core/cavemem.md`.
 
 ## RTK (Token Economy)
 
-- Prefer `brainforge/tools/rtk/rtk.exe`; else `rtk` on PATH.
-- Install: `powershell -ExecutionPolicy Bypass -File .\brainforge\tools\rtk\install-rtk-local.ps1`.
+- Prefer `.brainforge/tools/rtk/rtk.exe`; else `rtk` on PATH.
+- Install: `powershell -ExecutionPolicy Bypass -File .\.brainforge\tools\rtk\install-rtk-local.ps1`.
 
 ## MCP (quando configurado)
 
-- No início da tarefa: tools `brainforge_routine` + `memory_read` (context) se MCP brainforge estiver ativo.
-- Setup: `brainforge/core/docs/MCP-SETUP.md` · comando: `brainforge mcp`.
+- No início da tarefa: tools `brainforge_routine` e `memory_read(context)` se MCP brainforge estiver ativo.
+- Setup: `.brainforge/core/docs/MCP-SETUP.md` · comando: `brainforge mcp`.
 
 ## Skill Router (on demand)
 
-- Always on: Caveman + Cavemem + RTK only.
-- Specialized skills: opt-in by trigger; max 1 per request (2 if composition needed).
-- Source: `brainforge/core/skills/` (synced to `.cursor/skills/`).
+- Base: **only** Caveman + Cavemem + RTK.
+- Specialized skills under **`.brainforge/core/skills/`** — opt-in by trigger; max 1 per request (2 if truly needed).

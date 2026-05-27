@@ -29,6 +29,7 @@ enabled = true
 pub struct BrainforgeConfig {
     pub brainforge: BrainforgeMeta,
     pub install: InstallSection,
+    pub sync: SyncSection,
     pub mcp: McpSection,
 }
 
@@ -83,6 +84,21 @@ impl InstallSection {
             out.push(Adapter::Antigravity);
         }
         out
+    }
+}
+
+#[derive(Debug, Clone, Deserialize)]
+#[serde(default)]
+pub struct SyncSection {
+    /// `thin` = IDE folders are bridges only; `mirror` = full copy into `.cursor/`.
+    pub mode: String,
+}
+
+impl Default for SyncSection {
+    fn default() -> Self {
+        Self {
+            mode: "thin".into(),
+        }
     }
 }
 
@@ -164,6 +180,9 @@ cursor = {cursor}
 copilot = {copilot}
 antigravity = {antigravity}
 
+[sync]
+mode = "{sync_mode}"   # thin | mirror
+
 [mcp]
 enabled = {mcp_enabled}
 "#,
@@ -174,6 +193,7 @@ enabled = {mcp_enabled}
         cursor = cfg.install.cursor,
         copilot = cfg.install.copilot,
         antigravity = cfg.install.antigravity,
+        sync_mode = cfg.sync.mode,
         mcp_enabled = cfg.mcp.enabled,
     )
 }

@@ -1074,7 +1074,7 @@ fn interactive_adapters(project: &std::path::Path) -> Result<Vec<Adapter>> {
     let theme = ui::brainforge_theme();
 
     let picked = MultiSelect::with_theme(&theme)
-        .with_prompt("Onde instalar o BrainForge?")
+        .with_prompt("? Onde instalar o BrainForge?")
         .items(&labels)
         .defaults(&defaults)
         .interact()

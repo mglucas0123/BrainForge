@@ -14,7 +14,7 @@ impl Adapter {
     pub fn label(self) -> &'static str {
         match self {
             Adapter::Cursor => "Cursor",
-            Adapter::Copilot => "GitHub Copilot (VS Code)",
+            Adapter::Copilot => "GitHub Copilot",
             Adapter::Antigravity => "Antigravity",
         }
     }

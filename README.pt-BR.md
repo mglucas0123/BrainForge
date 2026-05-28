@@ -14,7 +14,7 @@ Na **pasta do seu projeto**:
 iex (irm https://mglucas0123.github.io/BrainForge/bf.ps1 -UseBasicParsing)
 ```
 
-Baixa a release **v1.0.0** e abre o menu de IDE (`brainforge init`).
+Baixa a release **v1.0.4** e abre o menu de IDE (`brainforge init`).
 
 **Todas as IDEs, sem menu:**
 
@@ -25,7 +25,7 @@ $env:BRAINFORGE_NO_MENU = "1"; iex (irm https://mglucas0123.github.io/BrainForge
 **URL alternativa:**
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/mglucas0123/BrainForge/v1.0.0/bf.ps1 -UseBasicParsing)
+iex (irm https://raw.githubusercontent.com/mglucas0123/BrainForge/v1.0.4/bf.ps1 -UseBasicParsing)
 ```
 
 ---

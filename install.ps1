@@ -3,7 +3,7 @@
 $ErrorActionPreference = "Stop"
 $urls = @(
     "https://mglucas0123.github.io/BrainForge/bf.ps1",
-    "https://raw.githubusercontent.com/mglucas0123/BrainForge/v1.0.0/bf.ps1"
+    "https://raw.githubusercontent.com/mglucas0123/BrainForge/v1.0.4/bf.ps1"
 )
 foreach ($u in $urls) {
     try {

@@ -1,19 +1,19 @@
 //! Terminal UI — Claude Code–inspired welcome (BrainForge: cyan + amber).
 
 use std::io::{self, Write};
-use std::path::Path;
-
 use console::{Style, Term, style};
 use dialoguer::theme::ColorfulTheme;
 
-/// CaveCrew pet — fine pixel sprite (Claude-style: dome head, square eyes, 4 legs).
+/// CaveCrew pet — 5-line sprite; each row is exactly `PET_W` columns (monospace).
+const PET_W: usize = 13;
+
+/// CaveCrew pet (fixed-width rows for alignment in the left column).
 pub const PET_PIXEL: &[&str] = &[
-    "     ▄▀▀▀▄",
-    "    ▐█████▌",
-    "    █ █▄█ █",
-    "    ▐█████▌",
-    "    ▄▀   ▀▄",
-    "     █ █ █",
+    "    ▄▀▀▀▄    ",
+    "   ▐█████▌   ",
+    "   █ █▄█ █   ",
+    "    ▀▀▀▀▀    ",
+    "     █ █     ",
 ];
 
 const BOX_W: usize = 64;
@@ -40,6 +40,17 @@ fn pad_to(s: &str, width: usize) -> String {
     }
 }
 
+fn center_to(s: &str, width: usize) -> String {
+    let vis = console::measure_text_width(s);
+    if vis >= width {
+        s.to_string()
+    } else {
+        let pad = width - vis;
+        let left = pad / 2;
+        format!("{}{}{}", " ".repeat(left), s, " ".repeat(pad - left))
+    }
+}
+
 fn pad_cols(left: &str, right: &str) -> String {
     debug_assert_eq!(LEFT_W + COL_SEP.len() + RIGHT_W, INNER_W);
     format!(
@@ -48,6 +59,18 @@ fn pad_cols(left: &str, right: &str) -> String {
         pad_to(left, LEFT_W),
         style(COL_SEP).cyan().bold(),
         pad_to(right, RIGHT_W),
+        edge()
+    )
+}
+
+fn pad_cols_center_both(left: &str, right: &str) -> String {
+    debug_assert_eq!(LEFT_W + COL_SEP.len() + RIGHT_W, INNER_W);
+    format!(
+        "{}{}{}{}{}",
+        edge(),
+        center_to(left, LEFT_W),
+        style(COL_SEP).cyan().bold(),
+        center_to(right, RIGHT_W),
         edge()
     )
 }
@@ -68,37 +91,13 @@ fn border_bottom() -> String {
     format!("╰{}╯", style("─".repeat(INNER_W)).cyan().bold())
 }
 
-/// Windows extended path (`\\?\`) stripped for display.
-fn friendly_path(path: &Path) -> String {
-    let s = path.display().to_string();
-    s.strip_prefix(r"\\?\")
-        .map(str::to_string)
-        .unwrap_or(s)
-}
-
-fn truncate_vis(s: &str, max: usize) -> String {
-    if console::measure_text_width(s) <= max {
-        return s.to_string();
-    }
-    let mut out = String::from("…");
-    for ch in s.chars().rev() {
-        let candidate = format!("{ch}{out}");
-        if console::measure_text_width(&candidate) > max {
-            break;
-        }
-        out = candidate;
-    }
-    out
-}
-
-fn style_pet_line(line: &str) -> String {
-    format!("  {}", style(line).cyan().bold())
-}
-
-fn local_user() -> String {
-    std::env::var("USERNAME")
-        .or_else(|_| std::env::var("USER"))
-        .unwrap_or_else(|_| "dev".into())
+/// One pet row: pad to column width once, then color (avoids double-center drift).
+fn pet_row(line: &str) -> String {
+    debug_assert!(
+        line.len() >= PET_W,
+        "pet line must be at least {PET_W} chars: {line:?}"
+    );
+    style(center_to(line, LEFT_W)).cyan().bold().to_string()
 }
 
 pub fn is_tty() -> bool {
@@ -117,56 +116,35 @@ pub fn welcome_enabled() -> bool {
 }
 
 /// Bordered welcome panel (Claude Code layout, BrainForge palette).
-pub fn print_welcome(project: &Path) {
+pub fn print_welcome() {
     if !is_tty() {
         return;
     }
     clear_screen();
 
     let ver = env!("CARGO_PKG_VERSION");
-    let user = local_user();
-    let path = truncate_vis(&friendly_path(project), LEFT_W.saturating_sub(2));
-
-    let welcome = format!("Bem-vindo, {}!", style(user).cyan().bold());
-    let tips = [
-        "Dicas para começar",
-        "/brainforge  no Cursor",
-        "Edite só .brainforge/",
-        "brainforge sync  atualiza",
-        "Espaço marca · Enter OK",
-        "",
-    ];
+    let welcome = style("Bem-vindo").cyan().bold().to_string();
+    let tips_title = h("Dicas para começar");
+    let tips_body = "Digite /brainforge no chat.";
 
     println!();
     println!("{}", border_top(&format!("BrainForge v{ver}")));
     println!("{}", pad_full(""));
-    println!("{}", pad_cols(&welcome, &h(tips[0])));
-
-    for (i, pet_line) in PET_PIXEL.iter().enumerate() {
-        let left = style_pet_line(pet_line);
-        let right = tips.get(i + 1).unwrap_or(&"");
-        println!("{}", pad_cols(&left, right));
+    println!("{}", pad_cols_center_both(&welcome, &tips_title));
+    println!("{}", pad_cols_center_both("", tips_body));
+    println!("{}", pad_full(""));
+    for pet_line in PET_PIXEL {
+        println!("{}", pad_cols(&pet_row(pet_line), ""));
     }
-
-    println!(
-        "{}",
-        pad_cols(
-            &style("  CaveCrew · kit portátil").dim().to_string(),
-            tips.get(6).unwrap_or(&"")
-        )
-    );
-    println!(
-        "{}",
-        pad_cols(&style(format!("  {path}")).dim().to_string(), "")
-    );
     println!("{}", pad_full(""));
     println!("{}", border_bottom());
     println!();
     println!(
         "  {} {}",
         style(PROMPT_GLYPH).cyan().bold(),
-        style("Escolha onde instalar (IDE)").dim()
+        style("Escolha onde instalar").dim()
     );
+    println!("     {}", style("Espaço marca · Enter OK").dim());
     println!();
     let _ = io::stdout().flush();
 }
@@ -208,9 +186,8 @@ pub fn print_setup_header(adapters: &[brainforge_core::Adapter]) {
         )
     );
     println!("{}", pad_cols(&format!("  {names}"), "  sync · doctor · kit"));
-    // Mini pet (top 4 lines of full sprite)
-    for line in PET_PIXEL.iter().take(4) {
-        println!("{}", pad_cols(&style_pet_line(line), ""));
+    for line in PET_PIXEL {
+        println!("{}", pad_cols(&pet_row(line), ""));
     }
     println!("{}", pad_full(""));
     println!("{}", border_bottom());

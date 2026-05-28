@@ -14,7 +14,7 @@ Run in **your project folder**:
 iex (irm https://mglucas0123.github.io/BrainForge/bf.ps1 -UseBasicParsing)
 ```
 
-Downloads from GitHub release **v1.0.0**, then opens the IDE menu (`brainforge init`).
+Downloads from GitHub release **v1.0.4**, then opens the IDE menu (`brainforge init`).
 
 **All IDEs, no menu:**
 
@@ -25,7 +25,7 @@ $env:BRAINFORGE_NO_MENU = "1"; iex (irm https://mglucas0123.github.io/BrainForge
 **Alternate URL** (if Pages is slow):
 
 ```powershell
-iex (irm https://raw.githubusercontent.com/mglucas0123/BrainForge/v1.0.0/bf.ps1 -UseBasicParsing)
+iex (irm https://raw.githubusercontent.com/mglucas0123/BrainForge/v1.0.4/bf.ps1 -UseBasicParsing)
 ```
 
 ---

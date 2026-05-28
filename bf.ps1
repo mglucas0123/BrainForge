@@ -102,7 +102,7 @@ function Resolve-ReleaseTag {
         Write-Warn "API GitHub indisponivel (rate limit?). Tentando releases diretas..."
     }
 
-    foreach ($candidate in @("v1.0.3", "v1.0.2", "v1.0.1", "v1.0.0")) {
+    foreach ($candidate in @("v1.0.4", "v1.0.3", "v1.0.2", "v1.0.1", "v1.0.0")) {
         $probe = Get-DirectReleaseAssetUrl -Repository $Repository -Tag $candidate -AssetName "brainforge.exe"
         if (Test-ReleaseAssetExists -Url $probe) {
             Write-Info "Release detectada: $candidate"

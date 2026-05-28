@@ -1054,20 +1054,16 @@ fn resolve_adapters(
     interactive_adapters(project)
 }
 
-fn interactive_adapters(project: &std::path::Path) -> Result<Vec<Adapter>> {
+fn interactive_adapters(_project: &std::path::Path) -> Result<Vec<Adapter>> {
     if ui::welcome_enabled() || ui::is_tty() {
-        ui::print_welcome(project);
+        ui::print_welcome();
     }
 
     let labels: Vec<String> = vec![
-        format!("{}  {}", Adapter::Cursor.label(), Adapter::Cursor.detail()),
-        format!("{}  {}", Adapter::Copilot.label(), Adapter::Copilot.detail()),
-        format!(
-            "{}  {}",
-            Adapter::Antigravity.label(),
-            Adapter::Antigravity.detail()
-        ),
-        "Todos — Cursor + Copilot + Antigravity".to_string(),
+        Adapter::Cursor.label().to_string(),
+        Adapter::Copilot.label().to_string(),
+        Adapter::Antigravity.label().to_string(),
+        "Todos".to_string(),
     ];
 
     let defaults = vec![true, true, true, false];

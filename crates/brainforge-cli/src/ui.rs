@@ -164,18 +164,22 @@ pub fn print_welcome(project: &Path) {
     println!();
     println!(
         "  {} {}",
-        style("›").cyan().bold(),
+        style(PROMPT_GLYPH).cyan().bold(),
         style("Escolha onde instalar (IDE)").dim()
     );
     println!();
     let _ = io::stdout().flush();
 }
 
+/// Menu prompt marker (Unicode — works in Windows Terminal / PowerShell 7).
+pub const PROMPT_GLYPH: &str = "❯ ";
+
 pub fn brainforge_theme() -> ColorfulTheme {
     ColorfulTheme {
         active_item_style: Style::new().cyan().bold(),
         inactive_item_style: Style::new().dim(),
         prompt_style: Style::new().cyan().bold(),
+        prompt_prefix: Style::new().cyan().bold().apply_to(PROMPT_GLYPH.to_string()),
         ..ColorfulTheme::default()
     }
 }

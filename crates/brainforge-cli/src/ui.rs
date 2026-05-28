@@ -17,8 +17,11 @@ pub const PET_PIXEL: &[&str] = &[
 ];
 
 const BOX_W: usize = 64;
-const LEFT_W: usize = 31;
-const RIGHT_W: usize = 28;
+/// Inner width between side `│` (must equal LEFT_W + 3 + RIGHT_W).
+const INNER_W: usize = BOX_W - 2;
+const LEFT_W: usize = 30;
+const RIGHT_W: usize = 29;
+const COL_SEP: &str = " │ ";
 
 fn edge() -> console::StyledObject<&'static str> {
     style("│").cyan().bold()
@@ -38,30 +41,54 @@ fn pad_to(s: &str, width: usize) -> String {
 }
 
 fn pad_cols(left: &str, right: &str) -> String {
+    debug_assert_eq!(LEFT_W + COL_SEP.len() + RIGHT_W, INNER_W);
     format!(
-        "{} {} {} {} {}",
+        "{}{}{}{}{}",
         edge(),
         pad_to(left, LEFT_W),
-        edge(),
+        style(COL_SEP).cyan().bold(),
         pad_to(right, RIGHT_W),
         edge()
     )
 }
 
 fn pad_full(text: &str) -> String {
-    format!("{} {} {}", edge(), pad_to(text, BOX_W - 4), edge())
+    format!("{}{}{}", edge(), pad_to(text, INNER_W), edge())
 }
 
 fn border_top(title: &str) -> String {
     let label = format!("─ {title} ");
-    let used = console::measure_text_width(&label) + 2;
-    let pad = BOX_W.saturating_sub(used.max(2));
+    let label_w = console::measure_text_width(&label);
+    let pad = INNER_W.saturating_sub(label_w);
     let inner = format!("{label}{}", "─".repeat(pad));
     format!("╭{}╮", style(inner).cyan().bold())
 }
 
 fn border_bottom() -> String {
-    format!("╰{}╯", style("─".repeat(BOX_W - 2)).cyan().bold())
+    format!("╰{}╯", style("─".repeat(INNER_W)).cyan().bold())
+}
+
+/// Windows extended path (`\\?\`) stripped for display.
+fn friendly_path(path: &Path) -> String {
+    let s = path.display().to_string();
+    s.strip_prefix(r"\\?\")
+        .map(str::to_string)
+        .unwrap_or(s)
+}
+
+fn truncate_vis(s: &str, max: usize) -> String {
+    if console::measure_text_width(s) <= max {
+        return s.to_string();
+    }
+    let mut out = String::from("…");
+    for ch in s.chars().rev() {
+        let candidate = format!("{ch}{out}");
+        if console::measure_text_width(&candidate) > max {
+            break;
+        }
+        out = candidate;
+    }
+    out
 }
 
 fn style_pet_line(line: &str) -> String {
@@ -98,7 +125,7 @@ pub fn print_welcome(project: &Path) {
 
     let ver = env!("CARGO_PKG_VERSION");
     let user = local_user();
-    let path = project.display().to_string();
+    let path = truncate_vis(&friendly_path(project), LEFT_W.saturating_sub(2));
 
     let welcome = format!("Bem-vindo, {}!", style(user).cyan().bold());
     let tips = [

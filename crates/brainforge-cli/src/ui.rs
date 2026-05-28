@@ -6,8 +6,15 @@ use std::path::Path;
 use console::{Style, Term, style};
 use dialoguer::theme::ColorfulTheme;
 
-/// Pixel CaveCrew pet (compact mascot).
-pub const PET_PIXEL: &str = "      ▄▀▀▀▄\n      █ ▄ █\n      ▀▄▄▄▀\n       ║║";
+/// CaveCrew pet — fine pixel sprite (Claude-style: dome head, square eyes, 4 legs).
+pub const PET_PIXEL: &[&str] = &[
+    "     ▄▀▀▀▄",
+    "    ▐█████▌",
+    "    █ █▄█ █",
+    "    ▐█████▌",
+    "    ▄▀   ▀▄",
+    "     █ █ █",
+];
 
 const BOX_W: usize = 64;
 const LEFT_W: usize = 31;
@@ -57,6 +64,10 @@ fn border_bottom() -> String {
     format!("╰{}╯", style("─".repeat(BOX_W - 2)).cyan().bold())
 }
 
+fn style_pet_line(line: &str) -> String {
+    format!("  {}", style(line).cyan().bold())
+}
+
 fn local_user() -> String {
     std::env::var("USERNAME")
         .or_else(|_| std::env::var("USER"))
@@ -90,28 +101,32 @@ pub fn print_welcome(project: &Path) {
     let path = project.display().to_string();
 
     let welcome = format!("Bem-vindo, {}!", style(user).cyan().bold());
-    let pet_lines: Vec<&str> = PET_PIXEL.lines().collect();
     let tips = [
         "Dicas para começar",
         "/brainforge  no Cursor",
         "Edite só .brainforge/",
         "brainforge sync  atualiza",
         "Espaço marca · Enter OK",
+        "",
     ];
 
     println!();
     println!("{}", border_top(&format!("BrainForge v{ver}")));
     println!("{}", pad_full(""));
     println!("{}", pad_cols(&welcome, &h(tips[0])));
-    println!("{}", pad_cols("", tips[1]));
-    for (i, line) in pet_lines.iter().enumerate() {
-        let left = format!("  {}", style(line).cyan().bold());
-        let right = tips.get(i + 2).unwrap_or(&"");
+
+    for (i, pet_line) in PET_PIXEL.iter().enumerate() {
+        let left = style_pet_line(pet_line);
+        let right = tips.get(i + 1).unwrap_or(&"");
         println!("{}", pad_cols(&left, right));
     }
+
     println!(
         "{}",
-        pad_cols(&style("  CaveCrew · kit portátil").dim().to_string(), "")
+        pad_cols(
+            &style("  CaveCrew · kit portátil").dim().to_string(),
+            tips.get(6).unwrap_or(&"")
+        )
     );
     println!(
         "{}",
@@ -162,6 +177,10 @@ pub fn print_setup_header(adapters: &[brainforge_core::Adapter]) {
         )
     );
     println!("{}", pad_cols(&format!("  {names}"), "  sync · doctor · kit"));
+    // Mini pet (top 4 lines of full sprite)
+    for line in PET_PIXEL.iter().take(4) {
+        println!("{}", pad_cols(&style_pet_line(line), ""));
+    }
     println!("{}", pad_full(""));
     println!("{}", border_bottom());
     println!();

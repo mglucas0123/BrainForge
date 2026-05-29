@@ -9,9 +9,6 @@
 .github/*
 !.github/workflows/
 
-# Root memory stub — canonical: .brainforge/memory/
-.context.md
-
 # Local bootstrap / build output
 brainforge.exe
 

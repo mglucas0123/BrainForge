@@ -8,7 +8,7 @@ version = "1.0.4"
 edition = "2021"
 license = "MIT"
 repository = "https://github.com/mglucas0123/BrainForge"
-authors = ["BrainForge Contributors"]
+authors = ["Mglucas0123"]
 
 [profile.release]
 lto = true

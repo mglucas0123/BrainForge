@@ -177,9 +177,18 @@ fn patch_host_kit_paths(kit_root: &Path) -> Result<()> {
             continue;
         };
         let original = text.clone();
+        
+        // 1. Proteger caminhos canônicos já corretos (.brainforge/) com placeholder
+        text = text.replace(".brainforge/", "___BF_CANONICAL___/");
+
+        // 2. Substituir caminhos legados (brainforge/ -> .brainforge/)
         for (from, to) in replacements {
             text = text.replace(from, to);
         }
+
+        // 3. Reverter o placeholder de volta para .brainforge/
+        text = text.replace("___BF_CANONICAL___/", ".brainforge/");
+
         if text != original {
             fs::write(path, text)
                 .with_context(|| format!("patch paths in {}", path.display()))?;
@@ -197,7 +206,7 @@ fn copy_install_exe(exe_source: Option<&Path>, target_project: &Path) -> Result<
         eprintln!("warn: executable not found at {}", exe.display());
         return Ok(false);
     }
-    let dest = target_project.join("brainforge.exe");
+    let dest = target_project.join(".brainforge").join("brainforge.exe");
     copy_file(exe, &dest)?;
     Ok(true)
 }

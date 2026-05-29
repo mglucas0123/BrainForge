@@ -130,6 +130,22 @@ enum Commands {
         #[arg(long)]
         copy: bool,
     },
+    /// Start the local HTTP API proxy server (Universal AI Gateway)
+    Proxy {
+        /// Port to listen on
+        #[arg(short, long, default_value = "8080")]
+        port: u16,
+    },
+    /// Run a command wrapping upstream API endpoints pointing to the local proxy
+    Run {
+        /// Command to execute (e.g. "aider", "claude")
+        #[arg(required = true, num_args = 1..)]
+        command: Vec<String>,
+        
+        /// Proxy port (default: 8080)
+        #[arg(short, long, default_value = "8080")]
+        port: u16,
+    },
     /// Print version and optional git describe
     Version,
     /// Search Cursor agent transcripts for this project
@@ -397,6 +413,22 @@ fn main() -> Result<()> {
                 bail!("use: brainforge prompt --copy");
             }
         }
+        Commands::Proxy { port } => {
+            println!("{} Iniciando o proxy local na porta {}...", style("brainforge proxy →").cyan().bold(), port);
+            tokio::runtime::Builder::new_multi_thread()
+                .enable_all()
+                .build()
+                .unwrap()
+                .block_on(async {
+                    if let Err(e) = brainforge_core::proxy::start_proxy(paths.project_root, port).await {
+                        eprintln!("Erro no proxy: {:?}", e);
+                        std::process::exit(1);
+                    }
+                });
+        }
+        Commands::Run { command, port } => {
+            cmd_run(&command, port)?;
+        }
         Commands::Version => {
             println!("brainforge {LONG_VERSION}");
         }
@@ -510,10 +542,10 @@ fn cmd_init(cmd: InitCmd<'_>) -> Result<()> {
         println!("{} .brainforge/", style("OK").green());
     }
     if report.exe_copied {
-        println!("{} brainforge.exe", style("OK").green());
+        println!("{} .brainforge/brainforge.exe", style("OK").green());
     }
     if report.config_updated {
-        println!("{} brainforge.toml", style("OK").green());
+        println!("{} .brainforge/brainforge.toml", style("OK").green());
     }
     println!(
         "{} sync: {}",
@@ -558,7 +590,7 @@ fn print_init_next_steps(project: &std::path::Path, adapters: &[Adapter]) {
         "  · MCP (opcional): {} --print-mcp-config",
         style(format!(
             "{} install .",
-            project.join("brainforge.exe").display()
+            project.join(".brainforge").join("brainforge.exe").display()
         ))
         .dim()
     );
@@ -581,7 +613,7 @@ fn cmd_install(
         .with_context(|| format!("target project {}", path.display()))?;
 
     if print_mcp_config {
-        let bundled = target.join("brainforge.exe");
+        let bundled = target.join(".brainforge").join("brainforge.exe");
         let exe = if bundled.is_file() {
             bundled
         } else {
@@ -620,10 +652,10 @@ fn cmd_install(
         println!("{} .brainforge/", style("OK").green());
     }
     if report.exe_copied {
-        println!("{} brainforge.exe", style("OK").green());
+        println!("{} .brainforge/brainforge.exe", style("OK").green());
     }
     if report.config_created {
-        println!("{} brainforge.toml (template)", style("OK").green());
+        println!("{} .brainforge/brainforge.toml (template)", style("OK").green());
     }
     if report.sync_ran {
         println!(
@@ -1114,4 +1146,30 @@ fn print_doctor(report: &brainforge_core::DoctorReport) {
         println!("{:<22} {}  {}", c.name, icon, c.detail);
     }
     println!();
+}
+
+fn cmd_run(command_args: &[String], port: u16) -> Result<()> {
+    if command_args.is_empty() {
+        bail!("Nenhum comando especificado.");
+    }
+    
+    let mut cmd = std::process::Command::new(&command_args[0]);
+    if command_args.len() > 1 {
+        cmd.args(&command_args[1..]);
+    }
+    
+    let proxy_url = format!("http://localhost:{}/v1", port);
+    cmd.env("OPENAI_API_BASE", &proxy_url);
+    cmd.env("ANTHROPIC_API_BASE", &proxy_url);
+    cmd.env("OPENAI_API_URL", &proxy_url);
+    cmd.env("ANTHROPIC_API_URL", &proxy_url);
+    
+    println!("{} Executando: {}", style("brainforge run →").cyan().bold(), command_args.join(" "));
+    println!("{} Proxy interceptando em http://localhost:{}", style("Envs configuradas:").dim(), port);
+    
+    let status = cmd.status().context("Falha ao executar comando")?;
+    if !status.success() {
+        std::process::exit(status.code().unwrap_or(1));
+    }
+    Ok(())
 }

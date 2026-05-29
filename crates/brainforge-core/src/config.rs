@@ -100,7 +100,7 @@ impl Default for McpSection {
 
 /// Load `brainforge.toml` from project root, or defaults if missing/invalid.
 pub fn load_config(project_root: &Path) -> BrainforgeConfig {
-    let path = project_root.join("brainforge.toml");
+    let path = project_root.join(".brainforge").join("brainforge.toml");
     if !path.is_file() {
         return BrainforgeConfig::default();
     }
@@ -120,9 +120,12 @@ pub fn load_config(project_root: &Path) -> BrainforgeConfig {
 }
 
 pub fn write_default_config_if_missing(project_root: &Path) -> Result<bool> {
-    let path = project_root.join("brainforge.toml");
+    let path = project_root.join(".brainforge").join("brainforge.toml");
     if path.is_file() {
         return Ok(false);
+    }
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).ok();
     }
     let cfg = BrainforgeConfig::default();
     std::fs::write(&path, render_brainforge_toml(&cfg))
@@ -132,7 +135,10 @@ pub fn write_default_config_if_missing(project_root: &Path) -> Result<bool> {
 
 /// Write or update `brainforge.toml` `[install]` flags from selected adapters.
 pub fn write_config_install(project_root: &Path, adapters: &[Adapter]) -> Result<bool> {
-    let path = project_root.join("brainforge.toml");
+    let path = project_root.join(".brainforge").join("brainforge.toml");
+    if let Some(parent) = path.parent() {
+        std::fs::create_dir_all(parent).ok();
+    }
     let mut cfg = load_config(project_root);
     if cfg.brainforge.memory_dir == "brainforge/memory" {
         cfg.brainforge.memory_dir = expected_memory_dir().into();

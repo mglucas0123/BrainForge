@@ -6,7 +6,6 @@ use anyhow::{Context, Result};
 use crate::adapter::Adapter;
 use crate::copy_util::{self, ensure_dir, mirror_dir_contents};
 use crate::kit::KitPaths;
-use crate::memory::sync_memory_to_cursor;
 
 pub fn run_sync(paths: &KitPaths, adapters: &[Adapter], embed_commands: bool) -> Result<()> {
     for adapter in adapters {
@@ -44,10 +43,7 @@ fn sync_cursor(paths: &KitPaths, embed_commands: bool) -> Result<()> {
         println!("[cursor] embedded {n} command(s)");
     }
 
-    link_or_copy_cursor_memory(paths)?;
-
     write_cursor_bridge_readme(paths)?;
-    write_cursor_generated_marker(paths)?;
 
     if !paths.rtk_exe().is_file() {
         eprintln!(
@@ -62,7 +58,7 @@ fn sync_cursor(paths: &KitPaths, embed_commands: bool) -> Result<()> {
 
 /// Drop mirror/junction clutter — skills and docs live only under `.brainforge/`.
 fn prune_legacy_cursor_mirror(cursor: &Path) -> Result<()> {
-    for name in ["skills", "skills-optional", "docs", "hooks.example"] {
+    for name in ["skills", "skills-optional", "docs", "hooks.example", "project", ".brainforge-generated"] {
         clear_path_for_link(&cursor.join(name))?;
     }
     for name in ["skills-catalog.json", "installed-skills.json"] {
@@ -85,59 +81,6 @@ fn clear_path_for_link(path: &Path) -> Result<()> {
     Ok(())
 }
 
-fn link_or_copy_cursor_memory(paths: &KitPaths) -> Result<()> {
-    let link = paths.project_root.join(".cursor").join("project");
-    let target = paths
-        .memory()
-        .canonicalize()
-        .with_context(|| "canonicalize .brainforge/memory")?;
-
-    clear_path_for_link(&link)?;
-    if let Some(parent) = link.parent() {
-        ensure_dir(parent)?;
-    }
-
-    #[cfg(windows)]
-    {
-        if std::os::windows::fs::symlink_dir(&target, &link).is_ok() {
-            println!("[cursor] .cursor/project → .brainforge/memory (symlink)");
-            return Ok(());
-        }
-        if windows_directory_junction(&link, &target) {
-            println!("[cursor] .cursor/project → .brainforge/memory (junction)");
-            return Ok(());
-        }
-    }
-
-    #[cfg(unix)]
-    {
-        if std::os::unix::fs::symlink(&target, &link).is_ok() {
-            println!("[cursor] .cursor/project → .brainforge/memory (symlink)");
-            return Ok(());
-        }
-    }
-
-    eprintln!("warn: link failed; copying memory into .cursor/project/");
-    sync_memory_to_cursor(paths)
-}
-
-#[cfg(windows)]
-fn windows_directory_junction(link: &Path, target: &Path) -> bool {
-    use std::process::Command;
-
-    Command::new("cmd")
-        .args([
-            "/C",
-            "mklink",
-            "/J",
-            &link.to_string_lossy(),
-            &target.to_string_lossy(),
-        ])
-        .status()
-        .map(|s| s.success())
-        .unwrap_or(false)
-}
-
 fn write_cursor_bridge_readme(paths: &KitPaths) -> Result<()> {
     let readme = paths.project_root.join(".cursor").join("README.md");
     let text = r#"# BrainForge (Cursor bridge)
@@ -149,25 +92,12 @@ This folder is **not** a second copy of the kit.
 | `.brainforge/` | **Edit here** — skills, memory, core, adapters |
 | `.cursor/rules/` | Cursor always-on rule → points at `.brainforge/` |
 | `.cursor/commands/` | Slash commands (`/brainforge`, etc.) |
-| `.cursor/project/` | Link → `.brainforge/memory/` |
 
 Skills, docs, hooks: **only** under `.brainforge/` (not mirrored here).
 
 To refresh: `brainforge sync`
 "#;
     fs::write(&readme, text).with_context(|| format!("write {}", readme.display()))?;
-    Ok(())
-}
-
-fn write_cursor_generated_marker(paths: &KitPaths) -> Result<()> {
-    let marker = paths
-        .project_root
-        .join(".cursor")
-        .join(".brainforge-generated");
-    let text = "BrainForge bridge. Canonical kit: .brainforge/\n";
-    copy_util::ensure_dir(marker.parent().unwrap())?;
-    fs::write(&marker, text)
-        .with_context(|| format!("write {}", marker.display()))?;
     Ok(())
 }
 
@@ -200,12 +130,9 @@ fn sync_antigravity(paths: &KitPaths) -> Result<()> {
         mirror_dir_contents(&wf_src, &agents.join("workflows"))?;
     }
 
-    let marker = paths.project_root.join(".agents").join(".brainforge-generated");
-    let text = "BrainForge bridge. Canonical: .brainforge/adapters/antigravity/\n";
-    if let Some(parent) = marker.parent() {
-        ensure_dir(parent)?;
-        fs::write(&marker, text).ok();
-    }
+    let marker = agents.join(".brainforge-generated");
+    clear_path_for_link(&marker).ok();
+
     println!("[antigravity] bridge → .agents/ (rules + workflows)");
     Ok(())
 }

@@ -65,7 +65,7 @@ pub fn run_init(
     if opts.copy_exe {
         if let Some(exe) = exe_source {
             if exe.is_file() {
-                let dest = target_project.join("brainforge.exe");
+                let dest = target_project.join(".brainforge").join("brainforge.exe");
                 if opts.force_kit || !dest.is_file() {
                     copy_util::copy_file(exe, &dest)?;
                     exe_copied = true;
@@ -191,7 +191,7 @@ pub fn write_host_gitignore(project_root: &Path, adapters: &[Adapter]) -> Result
     let mut lines = vec![
         String::new(),
         "# BrainForge (generated — edit .brainforge/ only)".to_string(),
-        "brainforge/".into(),
+        ".brainforge/".into(),
     ];
     if adapters.iter().any(|a| matches!(a, Adapter::Cursor)) {
         lines.push(".cursor/".into());

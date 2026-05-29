@@ -473,6 +473,11 @@ if ($script:InteractiveBootstrap) {
 $code = $LASTEXITCODE
 Remove-Item Env:BRAINFORGE_WELCOME -ErrorAction SilentlyContinue
 
+$installedExe = Join-Path $ProjectRoot ".brainforge\brainforge.exe"
+if (Test-Path $installedExe) {
+    Remove-Item -LiteralPath $exePath -Force -ErrorAction SilentlyContinue
+}
+
 Remove-LegacyHostKitFolder -ProjectRoot $ProjectRoot
 
 foreach ($dir in $script:CleanupDirs) {

@@ -27,6 +27,7 @@ alwaysApply: true
 ## Memory Discipline (Cavemem)
 
 - Read **`.brainforge/memory/.context.md`** and **`.brainforge/memory/.user.md`** at task start (`.cursor/project/` links here after sync).
+- **If `.context.md` is missing or empty: CREATE IT NOW** — even for a brand-new/empty project. Use format `§Stack: (unknown)§`. Do NOT skip.
 - Format: `§` + `**Capacity:**` — `.brainforge/core/docs/MEMORY-FORMAT.md`.
 - Auto-compress over threshold; skill `compress-context` or `/compress-context`. Opt-out: `sem auto-compress`.
 - Detail: `.brainforge/core/cavemem.md`.

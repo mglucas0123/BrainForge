@@ -9,11 +9,11 @@ const PET_W: usize = 13;
 
 /// CaveCrew pet (fixed-width rows for alignment in the left column).
 pub const PET_PIXEL: &[&str] = &[
-    "    ▄▀▀▀▄    ",
-    "   ▐█████▌   ",
-    "   █ █▄█ █   ",
-    "    ▀▀▀▀▀    ",
-    "     █ █     ",
+    "      ▲      ",
+    "     ███     ",
+    "    ▐███▌    ",
+    "   ▄█████▄   ",
+    "    ▀ ▀ ▀    ",
 ];
 
 const BOX_W: usize = 64;

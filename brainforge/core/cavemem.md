@@ -11,3 +11,4 @@ Full skill: `brainforge/core/skills/cavemem/SKILL.md` · format: `brainforge/cor
 - Auto-compress thresholds: context >80 lines or >4 KB; user >50 lines or >2 KB — skill `compress-context` or `/compress-context`.
 - Opt-out: `sem auto-compress` / `skip compress`.
 - After structural work → offer `.context.md` update; prefs → `.user.md`.
+- If `.context.md` is missing: **CREATE IT immediately** — even for empty projects. Minimum: `§Stack: (unknown)§`.

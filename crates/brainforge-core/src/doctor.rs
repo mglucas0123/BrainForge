@@ -42,11 +42,6 @@ pub fn run_doctor(paths: &KitPaths) -> Result<DoctorReport, anyhow::Error> {
             ".brainforge/memory/.user.md",
             &paths.memory().join(".user.md"),
         ),
-        check_mirror_memory(
-            ".cursor/project mirror",
-            &paths.project_root.join(".cursor/project/.context.md"),
-            &paths.memory().join(".context.md"),
-        ),
         check_legacy_rtk(&paths.project_root),
         check_kit_marker(paths),
         check_dir(
@@ -116,36 +111,7 @@ fn check_memory(name: &str, path: &Path) -> DoctorCheck {
     }
 }
 
-fn check_mirror_memory(name: &str, mirror: &Path, canonical: &Path) -> DoctorCheck {
-    if !mirror.exists() {
-        return DoctorCheck {
-            name: name.into(),
-            status: DoctorStatus::Warn,
-            detail: "mirror missing — run `brainforge sync -a cursor`".into(),
-        };
-    }
-    let same = fs_same_content(mirror, canonical);
-    DoctorCheck {
-        name: name.into(),
-        status: if same {
-            DoctorStatus::Pass
-        } else {
-            DoctorStatus::Warn
-        },
-        detail: if same {
-            "in sync with canonical".into()
-        } else {
-            "drift from .brainforge/memory — re-sync".into()
-        },
-    }
-}
 
-fn fs_same_content(a: &Path, b: &Path) -> bool {
-    match (std::fs::read(a), std::fs::read(b)) {
-        (Ok(x), Ok(y)) => x == y,
-        _ => false,
-    }
-}
 
 fn check_legacy_rtk(project_root: &Path) -> DoctorCheck {
     let legacy = project_root.join(".cursor/tools/rtk");

@@ -1,6 +1,6 @@
 # 🧠 BrainForge
 
-> **Gateway, Proxy e Otimizador Universal de Contexto para Assistentes de IA.** Blinde seu repositório contra alucinações de stack, force a persistência de **Prompt Caching** nativo com custo zero de tokens ativos e unifique regras de comportamento arquitetural para **IDEs (Cursor, Copilot)**, **Agentes Autônomos (Antigravity)**, **CLIs (Aider, Claude, Codex)** e **plugins de editores**.
+> **Gateway, Proxy e Orquestrador Universal de Contexto para Assistentes de IA.** Blinde seu repositório contra alucinações de stack, force a persistência de **Prompt Caching** nativo com custo zero de tokens ativos e unifique regras de comportamento arquitetural para **IDEs (Cursor, Copilot)**, **Agentes Autônomos (Antigravity)**, **CLIs (Aider, Claude, Codex)** e **plugins de editores**.
 
 [![Built with Rust](https://img.shields.io/badge/built%20with-Rust-orange?style=flat-square&logo=rust)](https://www.rust-lang.org/)
 [![License MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
@@ -10,7 +10,7 @@
 
 ## 🚀 O que é o BrainForge?
 
-O **BrainForge** é um barramento de contexto unificado e de alta performance, desenvolvido em **Rust**, projetado para atuar como o "cérebro persistente" do seu ecossistema de desenvolvimento assistido por IA. Ele sincroniza memórias físicas dinâmicas (`.context.md` e `.user.md`) e injeta diretrizes arquiteturais de forma **100% automática e silenciosa** nas pontes nativas das IDEs, além de intermediar requisições HTTP de CLIs e plugins através de um proxy local transparente.
+O **BrainForge** é um barramento e orquestrador de contexto unificado de alta performance, desenvolvido em **Rust**, projetado para atuar como o "cérebro persistente" do seu ecossistema de desenvolvimento assistido por IA. Ele sincroniza memórias físicas dinâmicas (`.context.md` e `.user.md`) e injeta diretrizes arquiteturais de forma **100% automática e silenciosa** nas pontes nativas das IDEs, além de intermediar requisições HTTP de CLIs e plugins através de um proxy local transparente.
 
 Com isso, o BrainForge elimina a alucinação de modelos, otimiza drasticamente a alocação de buffers de contexto e maximiza a eficiência de custos com infraestrutura de IA através de caching inteligente.
 

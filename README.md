@@ -1,6 +1,6 @@
 # 🧠 BrainForge
 
-> O "super cérebro" que salva a vida do seu assistente de IA (**Cursor**, **Copilot** e **Antigravity**) e mantém suas regras sempre ativas sem alucinações.
+> **Gateway, Proxy e Otimizador Universal de Contexto para Assistentes de IA.** Blinde seu repositório contra alucinações de stack, force a persistência de **Prompt Caching** nativo com custo zero de tokens ativos e unifique regras de comportamento arquitetural para **IDEs (Cursor, Copilot)**, **Agentes Autônomos (Antigravity)**, **CLIs (Aider, Claude Code)** e **plugins de editores**.
 
 [![Built with Rust](https://img.shields.io/badge/built%20with-Rust-orange?style=flat-square&logo=rust)](https://www.rust-lang.org/)
 [![License MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)
@@ -10,9 +10,9 @@
 
 ## 🚀 O que é o BrainForge?
 
-Sabe quando você está codando com IA e ela simplesmente começa a alucinar do nada, esquecendo a stack que você está usando, inventando bibliotecas erradas ou se perdendo na estrutura de pastas? 
+O **BrainForge** é um barramento de contexto unificado e de alta performance, desenvolvido em **Rust**, projetado para atuar como o "cérebro persistente" do seu ecossistema de desenvolvimento assistido por IA. Ele sincroniza memórias físicas dinâmicas (`.context.md` e `.user.md`) e injeta diretrizes arquiteturais de forma **100% automática e silenciosa** nas pontes nativas das IDEs, além de intermediar requisições HTTP de CLIs e plugins através de um proxy local transparente.
 
-O **BrainForge** é um kit inteligente escrito em **Rust** que cria arquivos de memórias físicas dinâmicas no seu projeto (`.context.md` e `.user.md`). Ele gerencia o contexto, controla o limite de caracteres e injeta regras de comportamento de forma **100% automática e silenciosa** nas pontes nativas da sua IDE.
+Com isso, o BrainForge elimina a alucinação de modelos, otimiza drasticamente a alocação de buffers de contexto e maximiza a eficiência de custos com infraestrutura de IA através de caching inteligente.
 
 ---
 

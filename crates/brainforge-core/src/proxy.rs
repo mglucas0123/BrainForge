@@ -40,13 +40,13 @@ impl ProxyState {
         if let Ok(c) = fs::read_to_string(memory_dir.join(".context.md")) {
             rules.push_str("--- PROJECT CONTEXT & STACK ---\n");
             rules.push_str(&c);
-            rules.push_str("\n");
+            rules.push('\n');
         }
         
         if let Ok(u) = fs::read_to_string(memory_dir.join(".user.md")) {
             rules.push_str("--- USER ARCHITECTURAL RULES & STACKS ---\n");
             rules.push_str(&u);
-            rules.push_str("\n");
+            rules.push('\n');
         }
         
         rules.push_str("=== END OF ACTIVE BEHAVIOR CONTEXT (BRAINFORGE) ===\n");
@@ -63,13 +63,13 @@ fn compress_prompt_logs(text: &str) -> String {
             compressed.push_str("[... BrainForge RTK Local: Logs compactados de forma eficiente para evitar saturação da Janela de Contexto ...]\n");
             for &line in lines.iter().take(25) {
                 compressed.push_str(line);
-                compressed.push_str("\n");
+                compressed.push('\n');
             }
             let omitted_count = lines.len() - 50;
             compressed.push_str(&format!("\n\n[... Omitidas {} linhas de logs repetitivos e avisos redundantes do compilador por eficiência de tokens ...]\n\n\n", omitted_count));
             for &line in lines.iter().skip(lines.len() - 25) {
                 compressed.push_str(line);
-                compressed.push_str("\n");
+                compressed.push('\n');
             }
             return compressed;
         }
@@ -326,9 +326,7 @@ async fn forward_upstream(_client: &reqwest::Client, req: reqwest::RequestBuilde
     }
     
     let stream = res.bytes_stream().map(|chunk| {
-        chunk.map_err(|e| {
-            std::io::Error::new(std::io::ErrorKind::Other, e)
-        })
+        chunk.map_err(std::io::Error::other)
     });
     
     let body = Body::from_stream(stream);

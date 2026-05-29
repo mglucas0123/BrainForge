@@ -1,6 +1,6 @@
 # 🧠 BrainForge
 
-> **Gateway, Proxy e Otimizador Universal de Contexto para Assistentes de IA.** Blinde seu repositório contra alucinações de stack, force a persistência de **Prompt Caching** nativo com custo zero de tokens ativos e unifique regras de comportamento arquitetural para **IDEs (Cursor, Copilot)**, **Agentes Autônomos (Antigravity)**, **CLIs (Aider, Claude Code)** e **plugins de editores**.
+> **Gateway, Proxy e Otimizador Universal de Contexto para Assistentes de IA.** Blinde seu repositório contra alucinações de stack, force a persistência de **Prompt Caching** nativo com custo zero de tokens ativos e unifique regras de comportamento arquitetural para **IDEs (Cursor, Copilot)**, **Agentes Autônomos (Antigravity)**, **CLIs (Aider, Claude, Codex)** e **plugins de editores**.
 
 [![Built with Rust](https://img.shields.io/badge/built%20with-Rust-orange?style=flat-square&logo=rust)](https://www.rust-lang.org/)
 [![License MIT](https://img.shields.io/badge/license-MIT-green?style=flat-square)](LICENSE)

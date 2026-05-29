@@ -12,6 +12,8 @@
 
 O **BrainForge** é um barramento e orquestrador de contexto unificado de alta performance, desenvolvido em **Rust**, projetado para atuar como o "cérebro persistente" do seu ecossistema de desenvolvimento assistido por IA. Ele sincroniza memórias físicas dinâmicas (`.context.md` e `.user.md`) e injeta diretrizes arquiteturais de forma **100% automática e silenciosa** nas pontes nativas das IDEs, além de intermediar requisições HTTP de CLIs e plugins através de um proxy local transparente.
 
+Ele atua como um **harness de alinhamento determinístico** (uma infraestrutura de controle/andaime), blindando o fluxo de prompts contra alucinações e garantindo que o modelo de IA opere estritamente sob as restrições arquiteturais e a stack tecnológica homologada para o projeto.
+
 Com isso, o BrainForge elimina a alucinação de modelos, otimiza drasticamente a alocação de buffers de contexto e maximiza a eficiência de custos com infraestrutura de IA através de caching inteligente.
 
 ---
@@ -19,6 +21,15 @@ Com isso, o BrainForge elimina a alucinação de modelos, otimiza drasticamente 
 ## 📈 O ROI Real: Com vs Sem BrainForge
 
 Codar sem gerenciar o contexto da IA em projetos comerciais é o jeito mais rápido de **queimar dinheiro com tokens** e perder a paciência corrigindo alucinações de stack.
+
+> [!IMPORTANT]
+> **Por que o BrainForge NÃO consome mais tokens? (A Matemática do Cache e da Eficiência)**
+> Uma dúvida natural de qualquer engenheiro de software é: *"Se o BrainForge injeta regras estruturadas nas requisições, isso não aumenta o consumo de tokens?"* **A resposta é um não categórico.**
+>
+> 1. **Custo Zero em Requisições Repetidas (KV Cache Hit)**: As IDEs enviam as regras no início de cada requisição. Sem o BrainForge, o prompt muda a cada chamada, invalidando o cache da API e cobrando **100% dos tokens de regras** todas as vezes. Com a injeção estática estruturada do BrainForge, o prefixo do prompt é idêntico. A API realiza um **Cache Hit** físico no servidor (KV Cache), custando **0 tokens ativos de processamento** para as regras a partir da segunda chamada.
+> 2. **Corte Drástico nos Tokens de Output (Mais Caros)**: Os tokens de saída (geração) chegam a ser até 5x mais caros que os de entrada. Ao impor diretrizes de concisão (como o *Caveman Mode* do BrainForge), a IA é instruída a retornar apenas diffs e explicações cirúrgicas, reduzindo respostas típicas de 800 tokens para meros 100 tokens.
+> 3. **Compressão Preventiva via Jaccard**: Ao atingir 80% de capacidade do buffer, o motor em Rust compacta as memórias redundantes em disco em até **60%**, mantendo o conhecimento intacto e os prompts fisicamente menores.
+> 4. **Filtro RTK para Logs Gigantes**: Em vez de colar 10.000 tokens de lixo contendo dumps inteiros de compilação ou testes, o utilitário RTK enxuga o payload para 150-300 tokens (apenas a linha do erro cirúrgico), poupando 95% do contexto.
 
 <p align="center">
   <img src="brainforge_roi_chart.png" alt="Arquitetura de Contexto - BrainForge" width="450">
